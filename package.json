@@ -1,0 +1,27 @@
+{
+    "name": "lifelink-twin",
+    "version": "1.0.0",
+    "description": "Real-time Emergency Health IoT Digital Twin System",
+    "main": "server/index.js",
+    "scripts": {
+        "start:simulator": "node simulator/index.js",
+        "start:edge": "node edge/index.js",
+        "start:server": "node server/index.js",
+        "start:all": "concurrently \"npm run start:server\" \"npm run start:edge\" \"npm run start:simulator\""
+    },
+    "keywords": [
+        "iot",
+        "digital-twin",
+        "healthcare",
+        "mqtt",
+        "real-time"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.18.2",
+        "mqtt": "^5.3.0",
+        "socket.io": "^4.6.1",
+        "concurrently": "^8.2.2"
+    }
+}

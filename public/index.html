@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeLink Twin - Digital Twin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for live charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.io client -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <span class="logo-icon">🏥</span>
+            <h1>LifeLink Twin</h1>
+        </div>
+        <div class="header-info">
+            <span class="connection-status" id="connectionStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Connecting...</span>
+            </span>
+            <span class="time" id="currentTime"></span>
+        </div>
+    </header>
+
+    <!-- Main Dashboard -->
+    <main class="dashboard">
+        <!-- Patient Info Card -->
+        <section class="patient-card">
+            <div class="patient-header">
+                <div class="patient-avatar">
+                    <span>👤</span>
+                </div>
+                <div class="patient-info">
+                    <h2 id="patientName">Waiting for data...</h2>
+                    <p id="patientId">Patient ID: --</p>
+                </div>
+                <div class="patient-status" id="patientStatus">
+                    <span class="status-badge normal">NORMAL</span>
+                </div>
+            </div>
+            <div class="patient-location">
+                <span>📍 Location: </span>
+                <span id="patientLocation">--</span>
+            </div>
+        </section>
+
+        <!-- Vital Signs Grid -->
+        <section class="vitals-grid">
+            <!-- Heart Rate Card -->
+            <div class="vital-card heart-rate">
+                <div class="vital-header">
+                    <span class="vital-icon">❤️</span>
+                    <span class="vital-title">Heart Rate</span>
+                </div>
+                <div class="vital-value">
+                    <span id="heartRateValue">--</span>
+                    <span class="vital-unit">BPM</span>
+                </div>
+                <div class="vital-chart">
+                    <canvas id="heartRateChart"></canvas>
+                </div>
+            </div>
+
+            <!-- SpO2 Card -->
+            <div class="vital-card spo2">
+                <div class="vital-header">
+                    <span class="vital-icon">🫁</span>
+                    <span class="vital-title">Oxygen Saturation</span>
+                </div>
+                <div class="vital-value">
+                    <span id="spo2Value">--</span>
+                    <span class="vital-unit">%</span>
+                </div>
+                <div class="spo2-gauge">
+                    <div class="gauge-bar">
+                        <div class="gauge-fill" id="spo2Gauge"></div>
+                    </div>
+                    <div class="gauge-labels">
+                        <span>85%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Temperature Card -->
+            <div class="vital-card temperature">
+                <div class="vital-header">
+                    <span class="vital-icon">🌡️</span>
+                    <span class="vital-title">Temperature</span>
+                </div>
+                <div class="vital-value">
+                    <span id="temperatureValue">--</span>
+                    <span class="vital-unit">°C</span>
+                </div>
+                <div class="temp-indicator">
+                    <div class="temp-bar">
+                        <div class="temp-fill" id="tempFill"></div>
+                        <div class="temp-marker normal-zone"></div>
+                    </div>
+                    <div class="temp-labels">
+                        <span>35°C</span>
+                        <span>37°C</span>
+                        <span>40°C</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts Section -->
+        <section class="alerts-section">
+            <h3>⚠️ Active Alerts</h3>
+            <div class="alerts-container" id="alertsContainer">
+                <p class="no-alerts">No active alerts</p>
+            </div>
+        </section>
+
+        <!-- Full Heart Rate Chart -->
+        <section class="chart-section">
+            <h3>📈 Heart Rate Trend (Last 60 seconds)</h3>
+            <div class="full-chart">
+                <canvas id="fullHeartRateChart"></canvas>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>LifeLink Twin - Real-time Emergency Health IoT Digital Twin System</p>
+        <p>Last updated: <span id="lastUpdate">--</span></p>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="app.js"></script>
+</body>
+
+</html>
