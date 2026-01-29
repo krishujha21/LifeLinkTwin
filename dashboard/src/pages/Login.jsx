@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import { useLanguage } from '../i18n';
+import { API_BASE_URL } from '../config/api';
 
 function Login({ onLogin }) {
     const { t } = useLanguage();
@@ -20,7 +21,7 @@ function Login({ onLogin }) {
         setError('');
 
         try {
-            const response = await fetch('http://localhost:3000/api/auth/login', {
+            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -103,8 +104,8 @@ function Login({ onLogin }) {
                             />
                         </div>
 
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             className="login-button"
                             disabled={loading}
                         >
@@ -124,7 +125,7 @@ function Login({ onLogin }) {
                     <div className="demo-credentials">
                         <h4>🔑 Demo Credentials</h4>
                         <div className="credential-list">
-                            <button 
+                            <button
                                 type="button"
                                 className="credential-btn"
                                 onClick={() => fillCredentials('admin', 'admin123')}
@@ -135,7 +136,7 @@ function Login({ onLogin }) {
                                     <span className="credential-role">System Administrator</span>
                                 </div>
                             </button>
-                            <button 
+                            <button
                                 type="button"
                                 className="credential-btn"
                                 onClick={() => fillCredentials('doctor', 'doctor123')}
@@ -146,7 +147,7 @@ function Login({ onLogin }) {
                                     <span className="credential-role">Medical Doctor</span>
                                 </div>
                             </button>
-                            <button 
+                            <button
                                 type="button"
                                 className="credential-btn"
                                 onClick={() => fillCredentials('nurse', 'nurse123')}

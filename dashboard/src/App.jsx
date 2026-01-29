@@ -34,6 +34,9 @@ import {
 // Login Page
 import Login from './pages/Login';
 
+// API Configuration
+import { API_BASE_URL } from './config/api';
+
 function App() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -61,7 +64,7 @@ function App() {
     const checkAuth = () => {
       const token = localStorage.getItem('token');
       const savedUser = localStorage.getItem('user');
-      
+
       if (token && savedUser) {
         try {
           const userData = JSON.parse(savedUser);
@@ -88,18 +91,18 @@ function App() {
   // Handle logout
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:3000/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
     } catch (e) {
       console.error('Logout error:', e);
     }
-    
+
     // Clear local storage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    
+
     // Reset state
     setUser(null);
     setIsAuthenticated(false);

@@ -114,7 +114,7 @@ app.post('/api/auth/login', async (req, res) => {
         req.session.user = result.user;
         req.session.token = result.token;
         req.session.loginTime = new Date().toISOString();
-        
+
         // Set token in cookie
         res.cookie('token', result.token, {
             httpOnly: true,

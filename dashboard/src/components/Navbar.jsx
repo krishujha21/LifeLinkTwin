@@ -74,7 +74,7 @@ function Navbar({
     const unreadCount = notifications.filter(n => !n.read).length;
 
     const markAsRead = (id) => {
-        setNotifications(prev => prev.map(n => 
+        setNotifications(prev => prev.map(n =>
             n.id === id ? { ...n, read: true } : n
         ));
     };
@@ -390,7 +390,7 @@ function Navbar({
 
                 {/* Notifications */}
                 <div className="notification-wrapper" ref={notifDropdownRef} style={{ position: 'relative' }}>
-                    <button 
+                    <button
                         className="notification-btn"
                         onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
                     >
@@ -405,7 +405,7 @@ function Navbar({
                             <div className="notif-header">
                                 <h4>🔔 Notifications</h4>
                                 {unreadCount > 0 && (
-                                    <button 
+                                    <button
                                         className="mark-all-read"
                                         onClick={markAllAsRead}
                                     >
@@ -422,22 +422,22 @@ function Navbar({
                                     </div>
                                 ) : (
                                     notifications.map(notif => (
-                                        <div 
-                                            key={notif.id} 
+                                        <div
+                                            key={notif.id}
                                             className={`notif-item ${notif.type} ${notif.read ? 'read' : 'unread'}`}
                                             onClick={() => markAsRead(notif.id)}
                                         >
                                             <div className="notif-icon">
-                                                {notif.type === 'critical' ? '🔴' : 
-                                                 notif.type === 'warning' ? '🟡' : 
-                                                 notif.type === 'success' ? '🟢' : '🔵'}
+                                                {notif.type === 'critical' ? '🔴' :
+                                                    notif.type === 'warning' ? '🟡' :
+                                                        notif.type === 'success' ? '🟢' : '🔵'}
                                             </div>
                                             <div className="notif-content">
                                                 <div className="notif-title">{notif.title}</div>
                                                 <div className="notif-message">{notif.message}</div>
                                                 <div className="notif-time">{notif.time}</div>
                                             </div>
-                                            <button 
+                                            <button
                                                 className="notif-close"
                                                 onClick={(e) => {
                                                     e.stopPropagation();

@@ -7,8 +7,17 @@
 
 import { io } from 'socket.io-client';
 
-// Backend server URL
-const SOCKET_URL = 'http://localhost:3000';
+// Backend server URL - use relative path in production, localhost in development
+const getSocketUrl = () => {
+    // In production, socket connects to the same origin
+    if (import.meta.env.PROD) {
+        return window.location.origin;
+    }
+    // In development
+    return 'http://localhost:3000';
+};
+
+const SOCKET_URL = getSocketUrl();
 
 // Create socket connection
 export const socket = io(SOCKET_URL, {

@@ -213,7 +213,7 @@ const authMiddleware = (req, res, next) => {
         req.user = req.session.user;
         return next();
     }
-    
+
     // Then check JWT token
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
 
