@@ -12,12 +12,12 @@ function PatientInfo({ patientData }) {
     // Mock patient details (in real app, this would come from backend)
     const patientDetails = {
         // Personal Information
-        name: patientData?.patientName || 'John Doe',
+        name: patientData?.patientName || 'Krishu Jha',
         id: patientData?.patientId || 'patient1',
-        age: 45,
+        age: 20,
         gender: 'Male',
-        bloodType: 'O+',
-        dateOfBirth: '1981-03-15',
+        bloodType: 'AB+',
+        dateOfBirth: '2006-03-01',
         phone: '+1 (555) 123-4567',
         email: 'john.doe@email.com',
         address: '123 Medical Center Drive, Healthcare City, HC 12345',

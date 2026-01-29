@@ -155,44 +155,141 @@ function App() {
     }
   }, []);
 
-  // ==================== VITALS SIMULATOR ====================
+  // ==================== REALISTIC VITALS SIMULATOR ====================
+  
+  // State to track current vitals per patient (for smooth transitions)
+  const [patientVitalStates, setPatientVitalStates] = useState({});
+  
+  // Medical scenarios with realistic patterns
+  const scenariosRef = useRef({
+    'Cardiac': [
+      { name: 'Stable', duration: 25, targets: { hr: 78, spo2: 96, temp: 36.8 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+      { name: 'Mild Tachycardia', duration: 15, targets: { hr: 105, spo2: 95, temp: 37.0 }, variability: { hr: 6, spo2: 1, temp: 0.1 } },
+      { name: 'Angina Episode', duration: 12, targets: { hr: 118, spo2: 93, temp: 37.2 }, variability: { hr: 8, spo2: 2, temp: 0.2 } },
+      { name: 'Recovery', duration: 20, targets: { hr: 85, spo2: 97, temp: 36.9 }, variability: { hr: 5, spo2: 1, temp: 0.1 } },
+    ],
+    'Trauma': [
+      { name: 'Stable', duration: 25, targets: { hr: 82, spo2: 97, temp: 36.6 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+      { name: 'Pain Response', duration: 15, targets: { hr: 98, spo2: 96, temp: 36.8 }, variability: { hr: 6, spo2: 1, temp: 0.1 } },
+      { name: 'Shock Risk', duration: 12, targets: { hr: 125, spo2: 92, temp: 36.2 }, variability: { hr: 10, spo2: 2, temp: 0.2 } },
+      { name: 'Stabilizing', duration: 20, targets: { hr: 88, spo2: 97, temp: 36.7 }, variability: { hr: 5, spo2: 1, temp: 0.1 } },
+    ],
+    'Respiratory': [
+      { name: 'Stable', duration: 20, targets: { hr: 76, spo2: 95, temp: 37.0 }, variability: { hr: 3, spo2: 1, temp: 0.1 } },
+      { name: 'Mild Distress', duration: 18, targets: { hr: 88, spo2: 92, temp: 37.2 }, variability: { hr: 5, spo2: 2, temp: 0.1 } },
+      { name: 'Hypoxia Episode', duration: 12, targets: { hr: 108, spo2: 87, temp: 37.5 }, variability: { hr: 8, spo2: 3, temp: 0.2 } },
+      { name: 'Oxygen Therapy', duration: 22, targets: { hr: 80, spo2: 96, temp: 37.1 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+    ],
+    'Stroke': [
+      { name: 'Stable', duration: 25, targets: { hr: 74, spo2: 97, temp: 36.8 }, variability: { hr: 3, spo2: 1, temp: 0.1 } },
+      { name: 'Elevated BP Response', duration: 15, targets: { hr: 92, spo2: 96, temp: 37.0 }, variability: { hr: 5, spo2: 1, temp: 0.1 } },
+      { name: 'Critical Phase', duration: 10, targets: { hr: 115, spo2: 91, temp: 37.8 }, variability: { hr: 8, spo2: 2, temp: 0.3 } },
+      { name: 'Monitoring', duration: 22, targets: { hr: 78, spo2: 97, temp: 36.9 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+    ]
+  });
+
+  // Helper functions for smooth transitions
+  const lerp = (current, target, speed) => current + (target - current) * speed;
+  
+  const addNaturalVariability = (value, range, patientId) => {
+    const time = Date.now() / 1000;
+    const patientOffset = patientId.charCodeAt(patientId.length - 1) * 0.1;
+    const sineVar = Math.sin(time * 0.3 + patientOffset) * (range * 0.4);
+    const randomVar = (Math.random() - 0.5) * range * 0.6;
+    return value + sineVar + randomVar;
+  };
+
+  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
   const generateSimulatedVitals = useCallback((patient) => {
-    // Different base vitals per patient condition
-    const conditionProfiles = {
-      'Cardiac': { baseHR: 95, baseSpo2: 94, baseTemp: 37.2, criticalChance: 0.08 },
-      'Trauma': { baseHR: 85, baseSpo2: 96, baseTemp: 36.5, criticalChance: 0.06 },
-      'Respiratory': { baseHR: 78, baseSpo2: 91, baseTemp: 37.8, criticalChance: 0.1 },
-      'Stroke': { baseHR: 88, baseSpo2: 95, baseTemp: 37.0, criticalChance: 0.07 }
+    const condition = patient.condition || 'Cardiac';
+    const scenarios = scenariosRef.current[condition] || scenariosRef.current['Cardiac'];
+    
+    // Get or initialize patient state
+    setPatientVitalStates(prev => {
+      const currentState = prev[patient.id] || {
+        currentHR: 75,
+        currentSpo2: 97,
+        currentTemp: 36.8,
+        scenarioIndex: 0,
+        scenarioTimer: 0,
+        currentScenario: scenarios[0]
+      };
+      
+      // Update scenario timer
+      let { scenarioIndex, scenarioTimer, currentScenario, currentHR, currentSpo2, currentTemp } = currentState;
+      scenarioTimer++;
+      
+      // Check if need to switch scenario
+      if (scenarioTimer >= currentScenario.duration) {
+        scenarioTimer = 0;
+        // 60% normal/recovery, 40% other
+        if (Math.random() < 0.6) {
+          scenarioIndex = Math.random() < 0.5 ? 0 : scenarios.length - 1;
+        } else {
+          scenarioIndex = Math.floor(Math.random() * scenarios.length);
+        }
+        currentScenario = scenarios[scenarioIndex];
+      }
+      
+      // Smooth interpolation towards targets
+      currentHR = lerp(currentHR, currentScenario.targets.hr, 0.08);
+      currentSpo2 = lerp(currentSpo2, currentScenario.targets.spo2, 0.06);
+      currentTemp = lerp(currentTemp, currentScenario.targets.temp, 0.04);
+      
+      return {
+        ...prev,
+        [patient.id]: {
+          currentHR,
+          currentSpo2,
+          currentTemp,
+          scenarioIndex,
+          scenarioTimer,
+          currentScenario
+        }
+      };
+    });
+    
+    // Get current state for this patient
+    const state = patientVitalStates[patient.id] || {
+      currentHR: 75,
+      currentSpo2: 97,
+      currentTemp: 36.8,
+      currentScenario: scenarios[0]
     };
-
-    const profile = conditionProfiles[patient.condition] || conditionProfiles['Cardiac'];
-    const { baseHR, baseSpo2, baseTemp, criticalChance } = profile;
-
-    // Add variation and occasional spikes
-    const random = Math.random();
-    let heartRate, spo2, temperature, status, alerts;
-
-    if (random > (1 - criticalChance)) {
-      // Critical scenario
-      heartRate = Math.round(baseHR + 40 + Math.random() * 20);
-      spo2 = Math.round(baseSpo2 - 8 + Math.random() * 4);
-      temperature = baseTemp + 2 + Math.random() * 0.8;
+    
+    const scenario = state.currentScenario || scenarios[0];
+    
+    // Add natural variability
+    const heartRate = Math.round(clamp(
+      addNaturalVariability(state.currentHR, scenario.variability.hr, patient.id),
+      45, 180
+    ));
+    
+    const spo2 = Math.round(clamp(
+      addNaturalVariability(state.currentSpo2, scenario.variability.spo2, patient.id),
+      75, 100
+    ));
+    
+    const temperature = Math.round(clamp(
+      addNaturalVariability(state.currentTemp, scenario.variability.temp, patient.id),
+      35.0, 41.0
+    ) * 10) / 10;
+    
+    // Determine status based on vitals
+    let status = 'normal';
+    let alerts = [];
+    
+    if (heartRate > 130 || spo2 < 90 || temperature > 39) {
       status = 'critical';
-      alerts = ['High Heart Rate', 'Low SpO2'];
-    } else if (random > 0.85) {
-      // Warning scenario (10% chance)
-      heartRate = Math.round(baseHR + 25 + Math.random() * 15);
-      spo2 = Math.round(baseSpo2 - 3 + Math.random() * 3);
-      temperature = baseTemp + 1 + Math.random() * 0.5;
+      if (heartRate > 130) alerts.push('Tachycardia');
+      if (spo2 < 90) alerts.push('Hypoxemia');
+      if (temperature > 39) alerts.push('High Fever');
+    } else if (heartRate > 110 || spo2 < 94 || temperature > 38.5) {
       status = 'warning';
-      alerts = ['Elevated Heart Rate'];
-    } else {
-      // Normal scenario
-      heartRate = Math.round(baseHR + (Math.random() - 0.5) * 20);
-      spo2 = Math.round(baseSpo2 + (Math.random() - 0.5) * 4);
-      temperature = baseTemp + (Math.random() - 0.5) * 0.6;
-      status = 'normal';
-      alerts = [];
+      if (heartRate > 110) alerts.push('Elevated HR');
+      if (spo2 < 94) alerts.push('Low SpO2');
+      if (temperature > 38.5) alerts.push('Fever');
     }
 
     return {
@@ -201,16 +298,17 @@ function App() {
       ambulance: patient.ambulance,
       location: patient.location,
       condition: patient.condition,
+      scenario: scenario.name,
       vitals: {
-        heartRate: Math.max(50, Math.min(180, heartRate)),
-        spo2: Math.max(80, Math.min(100, spo2)),
-        temperature: Math.max(35, Math.min(41, temperature))
+        heartRate,
+        spo2,
+        temperature
       },
       status,
       alerts,
       timestamp: new Date().toISOString()
     };
-  }, []);
+  }, [patientVitalStates]);
 
   // Toggle simulator
   const toggleSimulator = useCallback(() => {
