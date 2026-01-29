@@ -27,6 +27,8 @@ import EmergencyEscalationCard from '../components/EmergencyEscalationCard';
 import EdgeFailureBackupCard from '../components/EdgeFailureBackupCard';
 import DigitalTwinVisualizationCard from '../components/DigitalTwinVisualizationCard';
 import NationalEmergencyNetworkCard from '../components/NationalEmergencyNetworkCard';
+// AI Treatment Recommendations
+import AITreatmentRecommendationCard from '../components/AITreatmentRecommendationCard';
 
 // Role-Based Access Control
 import { isMedicalRole, isAdminRole, getRoleDisplayName, getRoleIcon } from '../utils/rbac';
@@ -111,6 +113,17 @@ function Dashboard({
                                 patientName={patientData?.patientName}
                                 patientId={patientData?.patientId}
                                 alerts={patientData?.alerts}
+                            />
+                        </div>
+                    </div>
+
+                    {/* AI Treatment Recommendations */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12">
+                            <AITreatmentRecommendationCard
+                                vitals={vitals}
+                                patientData={patientData}
+                                status={status}
                             />
                         </div>
                     </div>
