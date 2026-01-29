@@ -90,13 +90,14 @@ function App() {
 
   // Handle logout
   const handleLogout = async () => {
+    // Try to call backend logout (ignore errors for demo mode)
     try {
       await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include'
       });
     } catch (e) {
-      console.error('Logout error:', e);
+      // Silently ignore - logout works client-side anyway
     }
 
     // Clear local storage

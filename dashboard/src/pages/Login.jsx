@@ -2,11 +2,19 @@
  * LifeLink Twin - Login Page Component
  * 
  * Secure login page with authentication
+ * Supports both real backend auth and demo mode (when backend is not available)
  */
 
 import { useState } from 'react';
 import { useLanguage } from '../i18n';
 import { API_BASE_URL } from '../config/api';
+
+// Demo users for when backend is not available (production demo)
+const DEMO_USERS = {
+    admin: { username: 'admin', password: 'admin123', role: 'admin', name: 'System Administrator', email: 'admin@lifelink.com' },
+    doctor: { username: 'doctor', password: 'doctor123', role: 'doctor', name: 'Dr. Smith', email: 'doctor@lifelink.com' },
+    nurse: { username: 'nurse', password: 'nurse123', role: 'nurse', name: 'Nurse Johnson', email: 'nurse@lifelink.com' }
+};
 
 function Login({ onLogin }) {
     const { t } = useLanguage();
@@ -15,12 +23,32 @@ function Login({ onLogin }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    // Demo mode authentication (client-side only)
+    const demoLogin = (username, password) => {
+        const user = DEMO_USERS[username];
+        if (user && user.password === password) {
+            const token = `demo-token-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            return {
+                success: true,
+                token,
+                user: {
+                    username: user.username,
+                    role: user.role,
+                    name: user.name,
+                    email: user.email
+                }
+            };
+        }
+        return { success: false, message: 'Invalid username or password' };
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
         try {
+            // Try real backend first
             const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                 method: 'POST',
                 headers: {
@@ -41,8 +69,18 @@ function Login({ onLogin }) {
                 setError(data.message || 'Login failed');
             }
         } catch (err) {
-            console.error('Login error:', err);
-            setError('Network error. Please check if the server is running.');
+            console.log('Backend not available, using demo mode...');
+            
+            // Fallback to demo mode when backend is not available
+            const demoResult = demoLogin(username, password);
+            
+            if (demoResult.success) {
+                localStorage.setItem('token', demoResult.token);
+                localStorage.setItem('user', JSON.stringify(demoResult.user));
+                onLogin(demoResult.user, demoResult.token);
+            } else {
+                setError(demoResult.message);
+            }
         } finally {
             setLoading(false);
         }
