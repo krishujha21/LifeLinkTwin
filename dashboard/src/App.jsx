@@ -157,139 +157,123 @@ function App() {
 
   // ==================== REALISTIC VITALS SIMULATOR ====================
   
-  // State to track current vitals per patient (for smooth transitions)
-  const [patientVitalStates, setPatientVitalStates] = useState({});
+  // Use ref to track vital states (avoids stale closure issues)
+  const patientVitalStatesRef = useRef({});
   
-  // Medical scenarios with realistic patterns
+  // Medical scenarios - mostly stable with occasional mild changes
   const scenariosRef = useRef({
     'Cardiac': [
-      { name: 'Stable', duration: 25, targets: { hr: 78, spo2: 96, temp: 36.8 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
-      { name: 'Mild Tachycardia', duration: 15, targets: { hr: 105, spo2: 95, temp: 37.0 }, variability: { hr: 6, spo2: 1, temp: 0.1 } },
-      { name: 'Angina Episode', duration: 12, targets: { hr: 118, spo2: 93, temp: 37.2 }, variability: { hr: 8, spo2: 2, temp: 0.2 } },
-      { name: 'Recovery', duration: 20, targets: { hr: 85, spo2: 97, temp: 36.9 }, variability: { hr: 5, spo2: 1, temp: 0.1 } },
+      { name: 'Stable', duration: 45, targets: { hr: 76, spo2: 97, temp: 36.7 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
+      { name: 'Slight Elevation', duration: 20, targets: { hr: 88, spo2: 96, temp: 36.9 }, variability: { hr: 3, spo2: 0.5, temp: 0.05 } },
+      { name: 'Mild Stress', duration: 15, targets: { hr: 98, spo2: 95, temp: 37.0 }, variability: { hr: 3, spo2: 1, temp: 0.1 } },
+      { name: 'Recovery', duration: 30, targets: { hr: 80, spo2: 97, temp: 36.8 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
     ],
     'Trauma': [
-      { name: 'Stable', duration: 25, targets: { hr: 82, spo2: 97, temp: 36.6 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
-      { name: 'Pain Response', duration: 15, targets: { hr: 98, spo2: 96, temp: 36.8 }, variability: { hr: 6, spo2: 1, temp: 0.1 } },
-      { name: 'Shock Risk', duration: 12, targets: { hr: 125, spo2: 92, temp: 36.2 }, variability: { hr: 10, spo2: 2, temp: 0.2 } },
-      { name: 'Stabilizing', duration: 20, targets: { hr: 88, spo2: 97, temp: 36.7 }, variability: { hr: 5, spo2: 1, temp: 0.1 } },
+      { name: 'Stable', duration: 45, targets: { hr: 80, spo2: 97, temp: 36.6 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
+      { name: 'Pain Response', duration: 18, targets: { hr: 92, spo2: 96, temp: 36.8 }, variability: { hr: 3, spo2: 0.5, temp: 0.05 } },
+      { name: 'Elevated', duration: 12, targets: { hr: 105, spo2: 94, temp: 37.0 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+      { name: 'Stabilizing', duration: 35, targets: { hr: 82, spo2: 97, temp: 36.7 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
     ],
     'Respiratory': [
-      { name: 'Stable', duration: 20, targets: { hr: 76, spo2: 95, temp: 37.0 }, variability: { hr: 3, spo2: 1, temp: 0.1 } },
-      { name: 'Mild Distress', duration: 18, targets: { hr: 88, spo2: 92, temp: 37.2 }, variability: { hr: 5, spo2: 2, temp: 0.1 } },
-      { name: 'Hypoxia Episode', duration: 12, targets: { hr: 108, spo2: 87, temp: 37.5 }, variability: { hr: 8, spo2: 3, temp: 0.2 } },
-      { name: 'Oxygen Therapy', duration: 22, targets: { hr: 80, spo2: 96, temp: 37.1 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+      { name: 'Stable', duration: 40, targets: { hr: 74, spo2: 96, temp: 36.8 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
+      { name: 'Slight Distress', duration: 20, targets: { hr: 82, spo2: 94, temp: 37.0 }, variability: { hr: 3, spo2: 1, temp: 0.05 } },
+      { name: 'Mild Hypoxia', duration: 15, targets: { hr: 92, spo2: 91, temp: 37.1 }, variability: { hr: 3, spo2: 1, temp: 0.1 } },
+      { name: 'Improving', duration: 35, targets: { hr: 76, spo2: 96, temp: 36.9 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
     ],
     'Stroke': [
-      { name: 'Stable', duration: 25, targets: { hr: 74, spo2: 97, temp: 36.8 }, variability: { hr: 3, spo2: 1, temp: 0.1 } },
-      { name: 'Elevated BP Response', duration: 15, targets: { hr: 92, spo2: 96, temp: 37.0 }, variability: { hr: 5, spo2: 1, temp: 0.1 } },
-      { name: 'Critical Phase', duration: 10, targets: { hr: 115, spo2: 91, temp: 37.8 }, variability: { hr: 8, spo2: 2, temp: 0.3 } },
-      { name: 'Monitoring', duration: 22, targets: { hr: 78, spo2: 97, temp: 36.9 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+      { name: 'Stable', duration: 45, targets: { hr: 72, spo2: 97, temp: 36.7 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
+      { name: 'Slight Change', duration: 20, targets: { hr: 82, spo2: 96, temp: 36.9 }, variability: { hr: 3, spo2: 0.5, temp: 0.05 } },
+      { name: 'Elevated', duration: 15, targets: { hr: 95, spo2: 94, temp: 37.2 }, variability: { hr: 4, spo2: 1, temp: 0.1 } },
+      { name: 'Monitoring', duration: 35, targets: { hr: 75, spo2: 97, temp: 36.8 }, variability: { hr: 2, spo2: 0.5, temp: 0.05 } },
     ]
   });
 
-  // Helper functions for smooth transitions
+  // Smooth interpolation
   const lerp = (current, target, speed) => current + (target - current) * speed;
   
-  const addNaturalVariability = (value, range, patientId) => {
+  // Very subtle natural variability (like real monitors)
+  const addNaturalVariability = useCallback((value, range, seed) => {
     const time = Date.now() / 1000;
-    const patientOffset = patientId.charCodeAt(patientId.length - 1) * 0.1;
-    const sineVar = Math.sin(time * 0.3 + patientOffset) * (range * 0.4);
-    const randomVar = (Math.random() - 0.5) * range * 0.6;
+    // Slower sine wave for gentle oscillation
+    const sineVar = Math.sin(time * 0.15 + seed) * (range * 0.5);
+    // Very small random component
+    const randomVar = (Math.random() - 0.5) * range * 0.3;
     return value + sineVar + randomVar;
-  };
+  }, []);
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
   const generateSimulatedVitals = useCallback((patient) => {
     const condition = patient.condition || 'Cardiac';
     const scenarios = scenariosRef.current[condition] || scenariosRef.current['Cardiac'];
+    const patientSeed = patient.id.charCodeAt(patient.id.length - 1);
     
-    // Get or initialize patient state
-    setPatientVitalStates(prev => {
-      const currentState = prev[patient.id] || {
-        currentHR: 75,
-        currentSpo2: 97,
-        currentTemp: 36.8,
+    // Get or initialize patient state from ref
+    if (!patientVitalStatesRef.current[patient.id]) {
+      patientVitalStatesRef.current[patient.id] = {
+        currentHR: scenarios[0].targets.hr,
+        currentSpo2: scenarios[0].targets.spo2,
+        currentTemp: scenarios[0].targets.temp,
         scenarioIndex: 0,
-        scenarioTimer: 0,
-        currentScenario: scenarios[0]
+        scenarioTimer: 0
       };
-      
-      // Update scenario timer
-      let { scenarioIndex, scenarioTimer, currentScenario, currentHR, currentSpo2, currentTemp } = currentState;
-      scenarioTimer++;
-      
-      // Check if need to switch scenario
-      if (scenarioTimer >= currentScenario.duration) {
-        scenarioTimer = 0;
-        // 60% normal/recovery, 40% other
-        if (Math.random() < 0.6) {
-          scenarioIndex = Math.random() < 0.5 ? 0 : scenarios.length - 1;
-        } else {
-          scenarioIndex = Math.floor(Math.random() * scenarios.length);
-        }
-        currentScenario = scenarios[scenarioIndex];
+    }
+    
+    const state = patientVitalStatesRef.current[patient.id];
+    const currentScenario = scenarios[state.scenarioIndex];
+    
+    // Update scenario timer
+    state.scenarioTimer++;
+    
+    // Check if need to switch scenario (80% stay stable, 20% change)
+    if (state.scenarioTimer >= currentScenario.duration) {
+      state.scenarioTimer = 0;
+      if (Math.random() < 0.8) {
+        // Stay in stable or recovery
+        state.scenarioIndex = Math.random() < 0.7 ? 0 : scenarios.length - 1;
+      } else {
+        // Move to next scenario in sequence
+        state.scenarioIndex = (state.scenarioIndex + 1) % scenarios.length;
       }
-      
-      // Smooth interpolation towards targets
-      currentHR = lerp(currentHR, currentScenario.targets.hr, 0.08);
-      currentSpo2 = lerp(currentSpo2, currentScenario.targets.spo2, 0.06);
-      currentTemp = lerp(currentTemp, currentScenario.targets.temp, 0.04);
-      
-      return {
-        ...prev,
-        [patient.id]: {
-          currentHR,
-          currentSpo2,
-          currentTemp,
-          scenarioIndex,
-          scenarioTimer,
-          currentScenario
-        }
-      };
-    });
+    }
     
-    // Get current state for this patient
-    const state = patientVitalStates[patient.id] || {
-      currentHR: 75,
-      currentSpo2: 97,
-      currentTemp: 36.8,
-      currentScenario: scenarios[0]
-    };
+    const scenario = scenarios[state.scenarioIndex];
     
-    const scenario = state.currentScenario || scenarios[0];
+    // Very smooth interpolation (slow changes)
+    state.currentHR = lerp(state.currentHR, scenario.targets.hr, 0.03);
+    state.currentSpo2 = lerp(state.currentSpo2, scenario.targets.spo2, 0.02);
+    state.currentTemp = lerp(state.currentTemp, scenario.targets.temp, 0.01);
     
-    // Add natural variability
+    // Add subtle natural variability
     const heartRate = Math.round(clamp(
-      addNaturalVariability(state.currentHR, scenario.variability.hr, patient.id),
-      45, 180
+      addNaturalVariability(state.currentHR, scenario.variability.hr, patientSeed),
+      50, 160
     ));
     
     const spo2 = Math.round(clamp(
-      addNaturalVariability(state.currentSpo2, scenario.variability.spo2, patient.id),
-      75, 100
+      addNaturalVariability(state.currentSpo2, scenario.variability.spo2, patientSeed + 10),
+      85, 100
     ));
     
     const temperature = Math.round(clamp(
-      addNaturalVariability(state.currentTemp, scenario.variability.temp, patient.id),
-      35.0, 41.0
+      addNaturalVariability(state.currentTemp, scenario.variability.temp, patientSeed + 20),
+      35.5, 40.0
     ) * 10) / 10;
     
     // Determine status based on vitals
     let status = 'normal';
     let alerts = [];
     
-    if (heartRate > 130 || spo2 < 90 || temperature > 39) {
+    if (heartRate > 120 || spo2 < 90 || temperature > 38.5) {
       status = 'critical';
-      if (heartRate > 130) alerts.push('Tachycardia');
+      if (heartRate > 120) alerts.push('Tachycardia');
       if (spo2 < 90) alerts.push('Hypoxemia');
-      if (temperature > 39) alerts.push('High Fever');
-    } else if (heartRate > 110 || spo2 < 94 || temperature > 38.5) {
+      if (temperature > 38.5) alerts.push('High Fever');
+    } else if (heartRate > 100 || spo2 < 94 || temperature > 37.8) {
       status = 'warning';
-      if (heartRate > 110) alerts.push('Elevated HR');
+      if (heartRate > 100) alerts.push('Elevated HR');
       if (spo2 < 94) alerts.push('Low SpO2');
-      if (temperature > 38.5) alerts.push('Fever');
+      if (temperature > 37.8) alerts.push('Fever');
     }
 
     return {
@@ -308,7 +292,7 @@ function App() {
       alerts,
       timestamp: new Date().toISOString()
     };
-  }, [patientVitalStates]);
+  }, [addNaturalVariability]);
 
   // Toggle simulator
   const toggleSimulator = useCallback(() => {
