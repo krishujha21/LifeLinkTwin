@@ -13,22 +13,14 @@ export const ROLES = {
     NURSE: 'nurse'
 };
 
-// Menu items accessible by medical staff (doctor/nurse)
+// Menu items accessible by medical staff (doctor/nurse) - simplified patient care only
 export const MEDICAL_MENU_ITEMS = [
     'dashboard',
     'vitals',
     'patient',
     'alerts',
     'history',
-    'reports',
-    'predictive',
-    'ambulance',
-    'multipatient',
-    'twin',
-    'ai',
-    'handover',
-    'escalation',
-    'hospital'
+    'reports'
 ];
 
 // Menu items accessible by system admin

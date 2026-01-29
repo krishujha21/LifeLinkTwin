@@ -18,35 +18,21 @@ function Sidebar({ isOpen, onToggle, patientData, userRole }) {
     const allMenuItems = [
         { id: 'dashboard', path: '/', icon: '📊', labelKey: 'dashboard', badge: null },
 
-        // Patient Care Section (Medical Staff)
-        { id: 'divider-patient', isDivider: true, label: 'Patient Care', roles: ['doctor', 'nurse'] },
-        { id: 'vitals', path: '/vitals', icon: '❤️', labelKey: 'vitalsMonitor', badge: 'live' },
-        { id: 'patient', path: '/patient', icon: '👤', labelKey: 'patientInfo', badge: null },
-        { id: 'alerts', path: '/alerts', icon: '🚨', labelKey: 'alerts', badge: '3' },
-        { id: 'history', path: '/history', icon: '📈', labelKey: 'history', badge: null },
-        { id: 'reports', path: '/reports', icon: '📋', labelKey: 'reports', badge: null },
-
-        // Advanced Medical Features Section (Medical Staff)
-        { id: 'divider1', isDivider: true, label: 'Advanced Medical', roles: ['doctor', 'nurse'] },
-        { id: 'predictive', path: '/predictive', icon: '🔮', labelKey: 'predictiveHealth', badge: 'AI' },
-        { id: 'ambulance', path: '/ambulance', icon: '🚑', labelKey: 'ambulanceTracker', badge: 'live' },
-        { id: 'multipatient', path: '/multipatient', icon: '👥', labelKey: 'multiPatient', badge: null },
-        { id: 'twin', path: '/twin', icon: '🤖', labelKey: 'digitalTwin', badge: null },
-        { id: 'ai', path: '/ai', icon: '🧠', labelKey: 'aiExplanation', badge: 'AI' },
-        { id: 'handover', path: '/handover', icon: '📄', labelKey: 'handoverReport', badge: null },
-
-        // Emergency & Hospital (Medical Staff)
-        { id: 'divider3', isDivider: true, label: 'Emergency & Hospital', roles: ['doctor', 'nurse'] },
-        { id: 'escalation', path: '/escalation', icon: '⚠️', labelKey: 'emergencyEscalation', badge: null },
-        { id: 'hospital', path: '/hospital', icon: '🏥', labelKey: 'hospitalReadiness', badge: null },
+        // Patient Care Section (Medical Staff - Doctor/Nurse)
+        { id: 'divider-patient', isDivider: true, label: 'PATIENT CARE', roles: ['doctor', 'nurse'] },
+        { id: 'vitals', path: '/vitals', icon: '❤️', labelKey: 'vitalsMonitor', badge: 'live', roles: ['doctor', 'nurse'] },
+        { id: 'patient', path: '/patient', icon: '👤', labelKey: 'patientInfo', badge: null, roles: ['doctor', 'nurse'] },
+        { id: 'alerts', path: '/alerts', icon: '🚨', labelKey: 'alerts', badge: '3', roles: ['doctor', 'nurse'] },
+        { id: 'history', path: '/history', icon: '📈', labelKey: 'history', badge: null, roles: ['doctor', 'nurse'] },
+        { id: 'reports', path: '/reports', icon: '📋', labelKey: 'reports', badge: null, roles: ['doctor', 'nurse'] },
 
         // Network & Infrastructure (Admin Only)
         { id: 'divider2', isDivider: true, label: 'System Infrastructure', roles: ['admin'] },
-        { id: 'edgecloud', path: '/edgecloud', icon: '☁️', labelKey: 'edgeCloud', badge: null },
-        { id: 'qos', path: '/qos', icon: '📡', labelKey: 'networkQoS', badge: null },
-        { id: 'edgefailure', path: '/edgefailure', icon: '🔄', labelKey: 'edgeFailureBackup', badge: null },
-        { id: 'national', path: '/national', icon: '🌐', labelKey: 'nationalNetwork', badge: null },
-        { id: 'scenario', path: '/scenario', icon: '▶️', labelKey: 'scenarioPlayback', badge: null },
+        { id: 'edgecloud', path: '/edgecloud', icon: '☁️', labelKey: 'edgeCloud', badge: null, roles: ['admin'] },
+        { id: 'qos', path: '/qos', icon: '📡', labelKey: 'networkQoS', badge: null, roles: ['admin'] },
+        { id: 'edgefailure', path: '/edgefailure', icon: '🔄', labelKey: 'edgeFailureBackup', badge: null, roles: ['admin'] },
+        { id: 'national', path: '/national', icon: '🌐', labelKey: 'nationalNetwork', badge: null, roles: ['admin'] },
+        { id: 'scenario', path: '/scenario', icon: '▶️', labelKey: 'scenarioPlayback', badge: null, roles: ['admin'] },
 
         { id: 'divider4', isDivider: true },
         { id: 'settings', path: '/settings', icon: '⚙️', labelKey: 'settings', badge: null },
@@ -60,10 +46,14 @@ function Sidebar({ isOpen, onToggle, patientData, userRole }) {
                 return true;
             }
 
-            // Check dividers - only show if role matches
-            if (item.isDivider && item.roles) {
-                if (isMedicalRole(userRole) && item.roles.includes('doctor')) return true;
-                if (isAdminRole(userRole) && item.roles.includes('admin')) return true;
+            // If item has specific roles, check if user's role matches
+            if (item.roles) {
+                if (isMedicalRole(userRole) && (item.roles.includes('doctor') || item.roles.includes('nurse'))) {
+                    return true;
+                }
+                if (isAdminRole(userRole) && item.roles.includes('admin')) {
+                    return true;
+                }
                 return false;
             }
 
