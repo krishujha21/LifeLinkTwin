@@ -70,10 +70,10 @@ function Login({ onLogin }) {
             }
         } catch (err) {
             console.log('Backend not available, using demo mode...');
-            
+
             // Fallback to demo mode when backend is not available
             const demoResult = demoLogin(username, password);
-            
+
             if (demoResult.success) {
                 localStorage.setItem('token', demoResult.token);
                 localStorage.setItem('user', JSON.stringify(demoResult.user));

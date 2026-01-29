@@ -591,6 +591,7 @@ function App() {
             isOpen={sidebarOpen}
             onToggle={toggleSidebar}
             patientData={patientData}
+            userRole={user?.role}
           />
 
           {/* Main Content Area */}
@@ -632,6 +633,7 @@ function App() {
                         allPatientsData={allPatientsData}
                         selectedPatientId={selectedPatientId}
                         onSelectPatient={selectPatient}
+                        userRole={user?.role}
                       />
                     }
                   />

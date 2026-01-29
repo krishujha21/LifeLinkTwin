@@ -1,7 +1,10 @@
 /**
  * LifeLink Twin - Dashboard Page
  * 
- * Main dashboard with vital signs overview and multi-patient support
+ * Main dashboard with vital signs overview and multi-patient support.
+ * Role-based views:
+ * - Medical Staff (Doctor/Nurse): Patient vitals, health data, medical info
+ * - Admin: System infrastructure, network stats, technical monitoring
  */
 import HeartRateCard from '../components/HeartRateCard';
 import Spo2Card from '../components/Spo2Card';
@@ -25,6 +28,9 @@ import EdgeFailureBackupCard from '../components/EdgeFailureBackupCard';
 import DigitalTwinVisualizationCard from '../components/DigitalTwinVisualizationCard';
 import NationalEmergencyNetworkCard from '../components/NationalEmergencyNetworkCard';
 
+// Role-Based Access Control
+import { isMedicalRole, isAdminRole, getRoleDisplayName, getRoleIcon } from '../utils/rbac';
+
 function Dashboard({
     patientData,
     history,
@@ -36,199 +42,261 @@ function Dashboard({
     patients,
     allPatientsData,
     selectedPatientId,
-    onSelectPatient
+    onSelectPatient,
+    userRole // New prop for RBAC
 }) {
     const vitals = patientData?.vitals || {};
     const status = patientData?.status || 'normal';
 
-    return (
-        <>
-            {/* Page Header */}
-            <div className="page-header mb-4">
-                <h1 className="page-title">Live Patient Monitor</h1>
-                <p className="page-subtitle">
-                    Real-time vital signs monitoring • {patients?.length || 0} Digital Twins Active
-                    {patientData && (
-                        <span className="ms-2 badge bg-info">
-                            Viewing: {patientData.patientName} ({patientData.ambulance})
-                        </span>
-                    )}
-                </p>
-            </div>
+    // Medical Staff Dashboard
+    if (isMedicalRole(userRole)) {
+        return (
+            <>
+                {/* Page Header - Medical */}
+                <div className="page-header mb-4">
+                    <h1 className="page-title">{getRoleIcon(userRole)} Patient Care Dashboard</h1>
+                    <p className="page-subtitle">
+                        Real-time patient monitoring • {patients?.length || 0} Digital Twins Active
+                        {patientData && (
+                            <span className="ms-2 badge bg-info">
+                                Viewing: {patientData.patientName} ({patientData.ambulance})
+                            </span>
+                        )}
+                    </p>
+                </div>
 
-            {/* Bootstrap Grid Layout */}
-            <div className="container-fluid px-0">
-                {/* Row 0: Multi-Patient Overview */}
-                {patients && patients.length > 0 && (
+                <div className="container-fluid px-0">
+                    {/* Multi-Patient Overview */}
+                    {patients && patients.length > 0 && (
+                        <div className="row g-3 mb-3">
+                            <div className="col-12">
+                                <MultiPatientCard
+                                    patients={patients}
+                                    allPatientsData={allPatientsData}
+                                    selectedPatientId={selectedPatientId}
+                                    onSelectPatient={onSelectPatient}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Vital Signs Row */}
                     <div className="row g-3 mb-3">
-                        <div className="col-12">
-                            <MultiPatientCard
-                                patients={patients}
-                                allPatientsData={allPatientsData}
-                                selectedPatientId={selectedPatientId}
-                                onSelectPatient={onSelectPatient}
+                        <div className="col-12 col-md-6">
+                            <HeartRateCard
+                                value={vitals.heartRate}
+                                history={history}
+                                status={status}
+                            />
+                        </div>
+                        <div className="col-12 col-md-6">
+                            <Spo2Card
+                                value={vitals.spo2}
+                                status={status}
                             />
                         </div>
                     </div>
-                )}
 
-                {/* Row 1: Heart Rate & SpO2 */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                        <HeartRateCard
-                            value={vitals.heartRate}
-                            history={history}
-                            status={status}
-                        />
+                    {/* Temperature & Status */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-md-6">
+                            <TemperatureCard
+                                value={vitals.temperature}
+                                status={status}
+                            />
+                        </div>
+                        <div className="col-12 col-md-6">
+                            <StatusCard
+                                status={status}
+                                patientName={patientData?.patientName}
+                                patientId={patientData?.patientId}
+                                alerts={patientData?.alerts}
+                            />
+                        </div>
                     </div>
-                    <div className="col-12 col-md-6">
-                        <Spo2Card
-                            value={vitals.spo2}
-                            status={status}
-                        />
-                    </div>
-                </div>
 
-                {/* Row 2: Temperature & Status */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-md-6">
-                        <TemperatureCard
-                            value={vitals.temperature}
-                            status={status}
-                        />
+                    {/* Predictive Health & Hospital Readiness */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-lg-6">
+                            <PredictiveHealthCard
+                                vitals={vitals}
+                                history={history}
+                            />
+                        </div>
+                        <div className="col-12 col-lg-6">
+                            <HospitalReadinessCard
+                                patientData={patientData}
+                            />
+                        </div>
                     </div>
-                    <div className="col-12 col-md-6">
-                        <StatusCard
-                            status={status}
-                            patientName={patientData?.patientName}
-                            patientId={patientData?.patientId}
-                            alerts={patientData?.alerts}
-                        />
-                    </div>
-                </div>
 
-                {/* Row 3: Predictive Health & Hospital Readiness */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-lg-6">
-                        <PredictiveHealthCard
-                            vitals={vitals}
-                            history={history}
-                        />
+                    {/* Ambulance Tracker */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12">
+                            <AmbulanceTrackerCard />
+                        </div>
                     </div>
-                    <div className="col-12 col-lg-6">
-                        <HospitalReadinessCard
-                            patientData={patientData}
-                        />
-                    </div>
-                </div>
 
-                {/* Row 4: Ambulance Tracker */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12">
-                        <AmbulanceTrackerCard />
+                    {/* Patient Vitals Log */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12">
+                            <PatientLogCard patientLogs={patientLogs} />
+                        </div>
                     </div>
-                </div>
 
-                {/* Row 5: Edge/Cloud Visualizer & Network QoS */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-lg-6">
-                        <EdgeCloudVisualizerCard connected={connected} />
+                    {/* Advanced Medical Section */}
+                    <div className="row mb-3">
+                        <div className="col-12">
+                            <div className="section-divider d-flex align-items-center">
+                                <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
+                                <span className="px-3 text-muted" style={{ fontSize: '0.85rem' }}>
+                                    🧠 AI-Powered Medical Intelligence
+                                </span>
+                                <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
+                            </div>
+                        </div>
                     </div>
-                    <div className="col-12 col-lg-6">
-                        <NetworkQoSCard connected={connected} latency={latency} />
-                    </div>
-                </div>
 
-                {/* Row 6: Patient Vitals Log & System Event Log */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-lg-6">
-                        <PatientLogCard patientLogs={patientLogs} />
+                    {/* AI Explanation & Handover Report */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-lg-6">
+                            <AIExplanationCard
+                                vitals={vitals}
+                                prediction={null}
+                                patientData={patientData}
+                            />
+                        </div>
+                        <div className="col-12 col-lg-6">
+                            <HandoverReportCard
+                                patientData={patientData}
+                                vitals={vitals}
+                                history={history}
+                                ambulanceData={null}
+                            />
+                        </div>
                     </div>
-                    <div className="col-12 col-lg-6">
-                        <EventLogCard events={events} />
-                    </div>
-                </div>
 
-                {/* Row 7: Scenario Playback & Network Stats */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-lg-8">
-                        <ScenarioPlaybackCard />
-                    </div>
-                    <div className="col-12 col-lg-4">
-                        <NetworkStatsCard
-                            connected={connected}
-                            latency={latency}
-                            packetRate={1}
-                            lastUpdate={lastUpdate}
-                        />
-                    </div>
-                </div>
-
-                {/* ============================================ */}
-                {/* ADVANCED FEATURES - Phase 2 */}
-                {/* ============================================ */}
-
-                {/* Section Header */}
-                <div className="row mb-3">
-                    <div className="col-12">
-                        <div className="section-divider d-flex align-items-center">
-                            <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
-                            <span className="px-3 text-muted" style={{ fontSize: '0.85rem' }}>
-                                🚀 Advanced Intelligence & Network Features
-                            </span>
-                            <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
+                    {/* Emergency Escalation & Digital Twin */}
+                    <div className="row g-3">
+                        <div className="col-12 col-lg-6">
+                            <EmergencyEscalationCard
+                                patientData={patientData}
+                                vitals={vitals}
+                            />
+                        </div>
+                        <div className="col-12 col-lg-6">
+                            <DigitalTwinVisualizationCard
+                                vitals={vitals}
+                                patientData={patientData}
+                            />
                         </div>
                     </div>
                 </div>
+            </>
+        );
+    }
 
-                {/* Row 8: AI Explanation & Handover Report */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-lg-6">
-                        <AIExplanationCard
-                            vitals={vitals}
-                            prediction={null}
-                            patientData={patientData}
-                        />
-                    </div>
-                    <div className="col-12 col-lg-6">
-                        <HandoverReportCard
-                            patientData={patientData}
-                            vitals={vitals}
-                            history={history}
-                            ambulanceData={null}
-                        />
-                    </div>
+    // Admin Dashboard - System/Technical View
+    if (isAdminRole(userRole)) {
+        return (
+            <>
+                {/* Page Header - Admin */}
+                <div className="page-header mb-4">
+                    <h1 className="page-title">{getRoleIcon(userRole)} System Administration</h1>
+                    <p className="page-subtitle">
+                        Infrastructure Monitoring • Network Status • Edge Computing
+                        <span className={`ms-2 badge ${connected ? 'bg-success' : 'bg-danger'}`}>
+                            {connected ? '● System Online' : '○ System Offline'}
+                        </span>
+                    </p>
                 </div>
 
-                {/* Row 9: Emergency Escalation & Digital Twin */}
-                <div className="row g-3 mb-3">
-                    <div className="col-12 col-lg-6">
-                        <EmergencyEscalationCard
-                            patientData={patientData}
-                            vitals={vitals}
-                        />
+                <div className="container-fluid px-0">
+                    {/* Connection Status Overview */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-md-4">
+                            <div className="card h-100" style={{ background: 'linear-gradient(135deg, #1e3a5f 0%, #0d47a1 100%)' }}>
+                                <div className="card-body text-center">
+                                    <h3 className="text-white mb-2">🌐</h3>
+                                    <h5 className="text-white">System Status</h5>
+                                    <h2 className={`${connected ? 'text-success' : 'text-danger'}`}>
+                                        {connected ? 'ONLINE' : 'OFFLINE'}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                            <div className="card h-100" style={{ background: 'linear-gradient(135deg, #1a472a 0%, #2e7d32 100%)' }}>
+                                <div className="card-body text-center">
+                                    <h3 className="text-white mb-2">⚡</h3>
+                                    <h5 className="text-white">Network Latency</h5>
+                                    <h2 className="text-success">{latency || 0}ms</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                            <div className="card h-100" style={{ background: 'linear-gradient(135deg, #4a1a6b 0%, #7b1fa2 100%)' }}>
+                                <div className="card-body text-center">
+                                    <h3 className="text-white mb-2">📡</h3>
+                                    <h5 className="text-white">Active Connections</h5>
+                                    <h2 className="text-info">{patients?.length || 0}</h2>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="col-12 col-lg-6">
-                        <DigitalTwinVisualizationCard
-                            vitals={vitals}
-                            patientData={patientData}
-                        />
-                    </div>
-                </div>
 
-                {/* Row 10: Edge Failure Backup & National Network */}
-                <div className="row g-3">
-                    <div className="col-12 col-lg-6">
-                        <EdgeFailureBackupCard
-                            connected={connected}
-                        />
+                    {/* Edge/Cloud Visualizer & Network QoS */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-lg-6">
+                            <EdgeCloudVisualizerCard connected={connected} />
+                        </div>
+                        <div className="col-12 col-lg-6">
+                            <NetworkQoSCard connected={connected} latency={latency} />
+                        </div>
                     </div>
-                    <div className="col-12 col-lg-6">
-                        <NationalEmergencyNetworkCard />
+
+                    {/* Edge Failure Backup & National Network */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-lg-6">
+                            <EdgeFailureBackupCard connected={connected} />
+                        </div>
+                        <div className="col-12 col-lg-6">
+                            <NationalEmergencyNetworkCard />
+                        </div>
+                    </div>
+
+                    {/* System Event Log & Network Stats */}
+                    <div className="row g-3 mb-3">
+                        <div className="col-12 col-lg-8">
+                            <EventLogCard events={events} />
+                        </div>
+                        <div className="col-12 col-lg-4">
+                            <NetworkStatsCard
+                                connected={connected}
+                                latency={latency}
+                                packetRate={1}
+                                lastUpdate={lastUpdate}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Scenario Playback */}
+                    <div className="row g-3">
+                        <div className="col-12">
+                            <ScenarioPlaybackCard />
+                        </div>
                     </div>
                 </div>
-            </div>
-        </>
+            </>
+        );
+    }
+
+    // Fallback - Default view (shouldn't normally reach here)
+    return (
+        <div className="page-header mb-4">
+            <h1 className="page-title">Dashboard</h1>
+            <p className="page-subtitle">Please contact administrator for access.</p>
+        </div>
     );
 }
 

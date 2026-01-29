@@ -4,10 +4,12 @@
  * Top navigation bar with hamburger menu toggle,
  * connection status, theme toggle, language selector, patient selector, and current time display.
  * Pan India multi-language support.
+ * Role-based display for different user types.
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../i18n';
+import { getRoleDisplayName, getRoleIcon, isMedicalRole, isAdminRole } from '../utils/rbac';
 
 // Language configurations with native names
 const LANGUAGES = [
@@ -464,10 +466,10 @@ function Navbar({
                 <div className="user-menu">
                     <div className="user-info d-none d-md-flex">
                         <span className="user-name">{user?.name || 'User'}</span>
-                        <span className="user-role">{user?.role || 'Guest'}</span>
+                        <span className="user-role">{getRoleDisplayName(user?.role) || 'Guest'}</span>
                     </div>
                     <div className="user-avatar">
-                        <span>{user?.role === 'admin' ? '👤' : user?.role === 'doctor' ? '👨‍⚕️' : '👩‍⚕️'}</span>
+                        <span>{getRoleIcon(user?.role)}</span>
                     </div>
                     <button className="logout-btn" onClick={onLogout} title="Logout">
                         <span>🚪</span>
