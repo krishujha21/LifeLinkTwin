@@ -129,7 +129,7 @@ function clamp(value, min, max) {
 function generateVitals() {
     // Update scenario timer
     scenarioTimer++;
-    
+
     // Check if we need to switch scenarios
     if (scenarioTimer >= currentScenario.duration) {
         scenarioTimer = 0;
@@ -143,28 +143,28 @@ function generateVitals() {
         targetVitals = { ...currentScenario.targets };
         console.log(`📋 Scenario: ${currentScenario.name}`);
     }
-    
+
     // Smoothly interpolate current vitals towards target
     currentVitals.heartRate = lerp(currentVitals.heartRate, targetVitals.heartRate, 0.08);
     currentVitals.spo2 = lerp(currentVitals.spo2, targetVitals.spo2, 0.05);
     currentVitals.temperature = lerp(currentVitals.temperature, targetVitals.temperature, 0.03);
-    
+
     // Add natural variability
     const heartRate = Math.round(clamp(
         addVariability(currentVitals.heartRate, currentScenario.variability.heartRate),
         40, 180
     ));
-    
+
     const spo2 = Math.round(clamp(
         addVariability(currentVitals.spo2, currentScenario.variability.spo2),
         70, 100
     ));
-    
+
     const temperature = Math.round(clamp(
         addVariability(currentVitals.temperature, currentScenario.variability.temperature),
         35.0, 42.0
     ) * 10) / 10;
-    
+
     return {
         patientId: patientId,
         patientName: patientName,

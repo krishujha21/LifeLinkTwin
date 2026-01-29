@@ -18,6 +18,7 @@ import {
     Legend,
     Filler
 } from 'chart.js';
+import { useLanguage } from '../i18n';
 
 // Register Chart.js components
 ChartJS.register(
@@ -33,6 +34,7 @@ ChartJS.register(
 
 function HeartRateCard({ value, history, status }) {
     const cardRef = useRef(null);
+    const { t } = useLanguage();
 
     // Determine card glow based on status
     const getCardClass = () => {
@@ -99,23 +101,23 @@ function HeartRateCard({ value, history, status }) {
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <div className="vital-header">
                         <span className="vital-icon pulse-animation">❤️</span>
-                        <span className="vital-title">Heart Rate</span>
+                        <span className="vital-title">{t('heartRate')}</span>
                     </div>
-                    <span className="badge bg-dark">BPM</span>
+                    <span className="badge bg-dark">{t('bpm').toUpperCase()}</span>
                 </div>
 
                 {/* Value */}
                 <div className="vital-value-container">
                     <span className="vital-value heart-rate-value">{value || '--'}</span>
-                    <span className="vital-unit">BPM</span>
+                    <span className="vital-unit">{t('bpm').toUpperCase()}</span>
                 </div>
 
                 {/* Status indicator */}
                 <div className="vital-status mt-2">
-                    {value == null && <span className="text-muted">⏳ Waiting for data...</span>}
+                    {value == null && <span className="text-muted">⏳ {t('waiting')}...</span>}
                     {value != null && value > 130 && <span className="text-danger">⚠️ Tachycardia</span>}
                     {value != null && value > 120 && value <= 130 && <span className="text-warning">⚡ Elevated</span>}
-                    {value != null && value <= 120 && value >= 60 && <span className="text-success">✓ Normal</span>}
+                    {value != null && value <= 120 && value >= 60 && <span className="text-success">✓ {t('normal')}</span>}
                     {value != null && value < 60 && value > 0 && <span className="text-info">↓ Low</span>}
                 </div>
 

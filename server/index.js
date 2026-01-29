@@ -17,6 +17,18 @@ const http = require('http');
 const { Server } = require('socket.io');
 const mqtt = require('mqtt');
 const path = require('path');
+const cookieParser = require('cookie-parser');
+const session = require('express-session');
+
+// Import authentication module
+const {
+    createDefaultUsers,
+    authenticateUser,
+    registerUser,
+    getAllUsers,
+    authMiddleware,
+    adminMiddleware
+} = require('./auth');
 
 // Configuration
 const PORT = 3000;
@@ -50,11 +62,143 @@ const vitalHistory = {
 };
 const MAX_HISTORY = 60;
 
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
+
+// CORS middleware for dashboard
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+app.use(session({
+    secret: process.env.SESSION_SECRET || 'lifelink-session-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: false, // Set to true in production with HTTPS
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+}));
+
+// Initialize default users
+createDefaultUsers();
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
+// ==================== Authentication Routes ====================
+
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+        return res.status(400).json({
+            success: false,
+            message: 'Username and password are required'
+        });
+    }
+
+    const result = await authenticateUser(username, password);
+
+    if (result.success) {
+        // Store user in session
+        req.session.user = result.user;
+        req.session.token = result.token;
+        req.session.loginTime = new Date().toISOString();
+        
+        // Set token in cookie
+        res.cookie('token', result.token, {
+            httpOnly: true,
+            secure: false, // Set to true in production with HTTPS
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        });
+
+        console.log(`🔐 User logged in: ${username} (${result.user.role})`);
+    }
+
+    res.json(result);
+});
+
+// Register endpoint
+app.post('/api/auth/register', async (req, res) => {
+    const result = await registerUser(req.body);
+
+    if (result.success) {
+        console.log(`👤 New user registered: ${req.body.username}`);
+    }
+
+    res.json(result);
+});
+
+// Logout endpoint
+app.post('/api/auth/logout', (req, res) => {
+    // Destroy session
+    req.session.destroy((err) => {
+        if (err) {
+            console.error('Session destroy error:', err);
+        }
+    });
+    res.clearCookie('token');
+    res.clearCookie('connect.sid'); // Clear session cookie
+    res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Get current user
+app.get('/api/auth/me', authMiddleware, (req, res) => {
+    res.json({
+        success: true,
+        user: req.user,
+        session: {
+            loginTime: req.session?.loginTime,
+            active: !!req.session?.user
+        }
+    });
+});
+
+// Get session info
+app.get('/api/auth/session', (req, res) => {
+    if (req.session?.user) {
+        res.json({
+            success: true,
+            active: true,
+            user: req.session.user,
+            loginTime: req.session.loginTime
+        });
+    } else {
+        res.json({
+            success: false,
+            active: false,
+            message: 'No active session'
+        });
+    }
+});
+
+// Get all users (admin only)
+app.get('/api/auth/users', authMiddleware, adminMiddleware, (req, res) => {
+    const users = getAllUsers();
+    res.json({
+        success: true,
+        count: users.length,
+        users
+    });
+});
+
+// ==================== Protected API Routes ====================
+
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
 // REST API endpoint to get current patient data
-app.get('/api/patient/:id', (req, res) => {
+app.get('/api/patient/:id', authMiddleware, (req, res) => {
     const patientId = req.params.id;
     const data = patientData.get(patientId);
 
@@ -73,7 +217,7 @@ app.get('/api/patient/:id', (req, res) => {
 });
 
 // REST API endpoint to get all patients
-app.get('/api/patients', (req, res) => {
+app.get('/api/patients', authMiddleware, (req, res) => {
     const patients = Array.from(patientData.values());
     res.json({
         success: true,

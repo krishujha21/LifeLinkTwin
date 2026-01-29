@@ -94,7 +94,28 @@ npm run start:simulator
 3. **Open Dashboard:**
 Visit [http://localhost:3000](http://localhost:3000) in your browser.
 
+4. **Login:**
+Visit [http://localhost:3000/login.html](http://localhost:3000/login.html) and use:
+- Username: `admin`, Password: `admin123`
+
+5. **Test Authentication (Optional):**
+```bash
+npm run test:auth
+```
+
 ## 📊 Features
+
+### 🔐 Security & Authentication
+- **Password Hashing:** bcrypt with salt (10 rounds)
+- **JWT Tokens:** Secure token-based authentication
+- **Protected Routes:** All patient data endpoints require authentication
+- **Role-Based Access:** Admin, Doctor, and Nurse roles
+- **Default Users:**
+  - `admin/admin123` (Admin)
+  - `doctor/doctor123` (Doctor)
+  - `nurse/nurse123` (Nurse)
+- **Login Page:** [http://localhost:3000/login.html](http://localhost:3000/login.html)
+- See [SECURITY.md](SECURITY.md) for detailed documentation
 
 ### Vital Data Simulator (`/simulator`)
 - Generates realistic patient vitals every second
@@ -118,9 +139,17 @@ Visit [http://localhost:3000](http://localhost:3000) in your browser.
 - Express.js REST API
 - Socket.io real-time WebSocket
 - In-memory patient data storage
+- **Authentication & Security:**
+  - bcrypt password hashing
+  - JWT token-based auth
+  - Protected API endpoints
+  - Session management
 - API Endpoints:
-  - `GET /api/patients` - All patients
-  - `GET /api/patient/:id` - Specific patient
+  - `POST /api/auth/login` - User login
+  - `POST /api/auth/logout` - User logout
+  - `GET /api/auth/me` - Current user info
+  - `GET /api/patients` - All patients (protected)
+  - `GET /api/patient/:id` - Specific patient (protected)
   - `GET /api/health` - Server health check
 
 ### Digital Twin Dashboard (`/public`)

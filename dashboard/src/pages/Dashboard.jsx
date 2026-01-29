@@ -17,6 +17,13 @@ import NetworkQoSCard from '../components/NetworkQoSCard';
 import HospitalReadinessCard from '../components/HospitalReadinessCard';
 import ScenarioPlaybackCard from '../components/ScenarioPlaybackCard';
 import MultiPatientCard from '../components/MultiPatientCard';
+// Advanced Features - Phase 2
+import AIExplanationCard from '../components/AIExplanationCard';
+import HandoverReportCard from '../components/HandoverReportCard';
+import EmergencyEscalationCard from '../components/EmergencyEscalationCard';
+import EdgeFailureBackupCard from '../components/EdgeFailureBackupCard';
+import DigitalTwinVisualizationCard from '../components/DigitalTwinVisualizationCard';
+import NationalEmergencyNetworkCard from '../components/NationalEmergencyNetworkCard';
 
 function Dashboard({
     patientData,
@@ -143,7 +150,7 @@ function Dashboard({
                 </div>
 
                 {/* Row 7: Scenario Playback & Network Stats */}
-                <div className="row g-3">
+                <div className="row g-3 mb-3">
                     <div className="col-12 col-lg-8">
                         <ScenarioPlaybackCard />
                     </div>
@@ -154,6 +161,70 @@ function Dashboard({
                             packetRate={1}
                             lastUpdate={lastUpdate}
                         />
+                    </div>
+                </div>
+
+                {/* ============================================ */}
+                {/* ADVANCED FEATURES - Phase 2 */}
+                {/* ============================================ */}
+
+                {/* Section Header */}
+                <div className="row mb-3">
+                    <div className="col-12">
+                        <div className="section-divider d-flex align-items-center">
+                            <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
+                            <span className="px-3 text-muted" style={{ fontSize: '0.85rem' }}>
+                                🚀 Advanced Intelligence & Network Features
+                            </span>
+                            <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Row 8: AI Explanation & Handover Report */}
+                <div className="row g-3 mb-3">
+                    <div className="col-12 col-lg-6">
+                        <AIExplanationCard
+                            vitals={vitals}
+                            prediction={null}
+                            patientData={patientData}
+                        />
+                    </div>
+                    <div className="col-12 col-lg-6">
+                        <HandoverReportCard
+                            patientData={patientData}
+                            vitals={vitals}
+                            history={history}
+                            ambulanceData={null}
+                        />
+                    </div>
+                </div>
+
+                {/* Row 9: Emergency Escalation & Digital Twin */}
+                <div className="row g-3 mb-3">
+                    <div className="col-12 col-lg-6">
+                        <EmergencyEscalationCard
+                            patientData={patientData}
+                            vitals={vitals}
+                        />
+                    </div>
+                    <div className="col-12 col-lg-6">
+                        <DigitalTwinVisualizationCard
+                            vitals={vitals}
+                            patientData={patientData}
+                        />
+                    </div>
+                </div>
+
+                {/* Row 10: Edge Failure Backup & National Network */}
+                <div className="row g-3">
+                    <div className="col-12 col-lg-6">
+                        <EdgeFailureBackupCard
+                            connected={connected}
+                        />
+                    </div>
+                    <div className="col-12 col-lg-6">
+                        <NationalEmergencyNetworkCard />
                     </div>
                 </div>
             </div>

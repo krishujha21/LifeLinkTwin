@@ -5,7 +5,11 @@
  * and color-coded indicator bar.
  */
 
+import { useLanguage } from '../i18n';
+
 function TemperatureCard({ value, status }) {
+    const { t } = useLanguage();
+
     // Calculate position on temperature bar (35-40°C range)
     const tempPosition = value != null ? Math.max(0, Math.min(100, ((value - 35) / 5) * 100)) : 50;
 
@@ -17,11 +21,11 @@ function TemperatureCard({ value, status }) {
     };
 
     const getStatusInfo = () => {
-        if (value == null) return { text: 'Waiting for data...', class: 'text-muted', icon: '⏳' };
+        if (value == null) return { text: `${t('waiting')}...`, class: 'text-muted', icon: '⏳' };
         if (value > 39) return { text: 'High Fever - Critical', class: 'text-danger', icon: '🔥' };
         if (value > 38.5) return { text: 'Fever', class: 'text-warning', icon: '⚠️' };
         if (value < 35.5) return { text: 'Hypothermia', class: 'text-info', icon: '❄️' };
-        return { text: 'Normal', class: 'text-success', icon: '✓' };
+        return { text: t('normal'), class: 'text-success', icon: '✓' };
     };
 
     const statusInfo = getStatusInfo();
@@ -33,7 +37,7 @@ function TemperatureCard({ value, status }) {
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <div className="vital-header">
                         <span className="vital-icon">🌡️</span>
-                        <span className="vital-title">Temperature</span>
+                        <span className="vital-title">{t('temperature')}</span>
                     </div>
                     <span className="badge bg-dark">Body</span>
                 </div>
@@ -41,7 +45,7 @@ function TemperatureCard({ value, status }) {
                 {/* Value Display */}
                 <div className="vital-value-container text-center my-4">
                     <span className="vital-value temp-value">{value?.toFixed(1) || '--'}</span>
-                    <span className="vital-unit">°C</span>
+                    <span className="vital-unit">{t('celsius')}</span>
                 </div>
 
                 {/* Status */}

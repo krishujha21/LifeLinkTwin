@@ -13,6 +13,9 @@ import './styles.css';
 // Socket connection
 import socket from './socket';
 
+// i18n - Multi-language support
+import { LanguageProvider, useLanguage } from './i18n';
+
 // Components
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
@@ -28,7 +31,15 @@ import {
   Settings
 } from './pages';
 
+// Login Page
+import Login from './pages/Login';
+
 function App() {
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   // UI state
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -44,6 +55,55 @@ function App() {
 
   // Connection state
   const [connected, setConnected] = useState(false);
+
+  // Check authentication on mount
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+      
+      if (token && savedUser) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          setIsAuthenticated(true);
+        } catch (e) {
+          // Invalid user data, clear storage
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        }
+      }
+      setAuthLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  // Handle login
+  const handleLogin = (userData, token) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:3000/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch (e) {
+      console.error('Logout error:', e);
+    }
+    
+    // Clear local storage
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Reset state
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
   // Multi-Patient Support
   const [patients] = useState([
@@ -156,10 +216,10 @@ function App() {
   }, []);
 
   // ==================== REALISTIC VITALS SIMULATOR ====================
-  
+
   // Use ref to track vital states (avoids stale closure issues)
   const patientVitalStatesRef = useRef({});
-  
+
   // Medical scenarios - mostly stable with occasional mild changes
   const scenariosRef = useRef({
     'Cardiac': [
@@ -190,7 +250,7 @@ function App() {
 
   // Smooth interpolation
   const lerp = (current, target, speed) => current + (target - current) * speed;
-  
+
   // Very subtle natural variability (like real monitors)
   const addNaturalVariability = useCallback((value, range, seed) => {
     const time = Date.now() / 1000;
@@ -207,7 +267,7 @@ function App() {
     const condition = patient.condition || 'Cardiac';
     const scenarios = scenariosRef.current[condition] || scenariosRef.current['Cardiac'];
     const patientSeed = patient.id.charCodeAt(patient.id.length - 1);
-    
+
     // Get or initialize patient state from ref
     if (!patientVitalStatesRef.current[patient.id]) {
       patientVitalStatesRef.current[patient.id] = {
@@ -218,13 +278,13 @@ function App() {
         scenarioTimer: 0
       };
     }
-    
+
     const state = patientVitalStatesRef.current[patient.id];
     const currentScenario = scenarios[state.scenarioIndex];
-    
+
     // Update scenario timer
     state.scenarioTimer++;
-    
+
     // Check if need to switch scenario (80% stay stable, 20% change)
     if (state.scenarioTimer >= currentScenario.duration) {
       state.scenarioTimer = 0;
@@ -236,34 +296,34 @@ function App() {
         state.scenarioIndex = (state.scenarioIndex + 1) % scenarios.length;
       }
     }
-    
+
     const scenario = scenarios[state.scenarioIndex];
-    
+
     // Very smooth interpolation (slow changes)
     state.currentHR = lerp(state.currentHR, scenario.targets.hr, 0.03);
     state.currentSpo2 = lerp(state.currentSpo2, scenario.targets.spo2, 0.02);
     state.currentTemp = lerp(state.currentTemp, scenario.targets.temp, 0.01);
-    
+
     // Add subtle natural variability
     const heartRate = Math.round(clamp(
       addNaturalVariability(state.currentHR, scenario.variability.hr, patientSeed),
       50, 160
     ));
-    
+
     const spo2 = Math.round(clamp(
       addNaturalVariability(state.currentSpo2, scenario.variability.spo2, patientSeed + 10),
       85, 100
     ));
-    
+
     const temperature = Math.round(clamp(
       addNaturalVariability(state.currentTemp, scenario.variability.temp, patientSeed + 20),
       35.5, 40.0
     ) * 10) / 10;
-    
+
     // Determine status based on vitals
     let status = 'normal';
     let alerts = [];
-    
+
     if (heartRate > 120 || spo2 < 90 || temperature > 38.5) {
       status = 'critical';
       if (heartRate > 120) alerts.push('Tachycardia');
@@ -495,114 +555,141 @@ function App() {
   // Extract status
   const status = patientData?.status || 'normal';
 
-  return (
-    <Router>
-      <div className="app-container">
-        {/* Sidebar */}
-        <Sidebar
-          isOpen={sidebarOpen}
-          onToggle={toggleSidebar}
-          patientData={patientData}
-        />
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <LanguageProvider>
+        <div className="login-page" style={{ justifyContent: 'center', alignItems: 'center' }}>
+          <div style={{ textAlign: 'center', color: 'white' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🏥</div>
+            <div style={{ fontSize: '1.2rem' }}>Loading LifeLink Twin...</div>
+          </div>
+        </div>
+      </LanguageProvider>
+    );
+  }
 
-        {/* Main Content Area */}
-        <div className={`main-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
-          {/* Top Navbar */}
-          <Navbar
-            connected={connected}
-            status={status}
-            onMenuToggle={toggleSidebar}
-            sidebarOpen={sidebarOpen}
-            simulatorOn={simulatorOn}
-            onToggleSimulator={toggleSimulator}
-            theme={theme}
-            onToggleTheme={toggleTheme}
-            patients={patients}
-            selectedPatientId={selectedPatientId}
-            onSelectPatient={selectPatient}
-            allPatientsData={allPatientsData}
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <LanguageProvider>
+        <Login onLogin={handleLogin} />
+      </LanguageProvider>
+    );
+  }
+
+  return (
+    <LanguageProvider>
+      <Router>
+        <div className="app-container">
+          {/* Sidebar */}
+          <Sidebar
+            isOpen={sidebarOpen}
+            onToggle={toggleSidebar}
+            patientData={patientData}
           />
 
-          {/* Dashboard Content */}
-          <main className="main-content">
-            <div className="content-wrapper">
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <Dashboard
-                      patientData={patientData}
-                      history={history}
-                      events={events}
-                      patientLogs={patientLogs}
-                      connected={connected}
-                      latency={latency}
-                      lastUpdate={lastUpdate}
-                      patients={patients}
-                      allPatientsData={allPatientsData}
-                      selectedPatientId={selectedPatientId}
-                      onSelectPatient={selectPatient}
-                    />
-                  }
-                />
-                <Route
-                  path="/vitals"
-                  element={
-                    <VitalsMonitor
-                      patientData={patientData}
-                      history={history}
-                    />
-                  }
-                />
-                <Route
-                  path="/patient"
-                  element={<PatientInfo patientData={patientData} />}
-                />
-                <Route
-                  path="/alerts"
-                  element={
-                    <Alerts
-                      events={events}
-                      patientData={patientData}
-                    />
-                  }
-                />
-                <Route
-                  path="/history"
-                  element={
-                    <History
-                      patientData={patientData}
-                      history={history}
-                    />
-                  }
-                />
-                <Route
-                  path="/reports"
-                  element={
-                    <Reports
-                      patientData={patientData}
-                      history={history}
-                      events={events}
-                    />
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={<Settings />}
-                />
-              </Routes>
-            </div>
+          {/* Main Content Area */}
+          <div className={`main-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* Top Navbar */}
+            <Navbar
+              connected={connected}
+              status={status}
+              onMenuToggle={toggleSidebar}
+              sidebarOpen={sidebarOpen}
+              simulatorOn={simulatorOn}
+              onToggleSimulator={toggleSimulator}
+              theme={theme}
+              onToggleTheme={toggleTheme}
+              patients={patients}
+              selectedPatientId={selectedPatientId}
+              onSelectPatient={selectPatient}
+              allPatientsData={allPatientsData}
+              user={user}
+              onLogout={handleLogout}
+            />
 
-            {/* Footer */}
-            <footer className="main-footer">
-              <span>🏥 LifeLink Twin - Emergency Health IoT Digital Twin System</span>
-              <span className="footer-divider">•</span>
-              <span>Last Update: {lastUpdate || '--:--:--'}</span>
-            </footer>
-          </main>
+            {/* Dashboard Content */}
+            <main className="main-content">
+              <div className="content-wrapper">
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <Dashboard
+                        patientData={patientData}
+                        history={history}
+                        events={events}
+                        patientLogs={patientLogs}
+                        connected={connected}
+                        latency={latency}
+                        lastUpdate={lastUpdate}
+                        patients={patients}
+                        allPatientsData={allPatientsData}
+                        selectedPatientId={selectedPatientId}
+                        onSelectPatient={selectPatient}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/vitals"
+                    element={
+                      <VitalsMonitor
+                        patientData={patientData}
+                        history={history}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/patient"
+                    element={<PatientInfo patientData={patientData} />}
+                  />
+                  <Route
+                    path="/alerts"
+                    element={
+                      <Alerts
+                        events={events}
+                        patientData={patientData}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/history"
+                    element={
+                      <History
+                        patientData={patientData}
+                        history={history}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/reports"
+                    element={
+                      <Reports
+                        patientData={patientData}
+                        history={history}
+                        events={events}
+                      />
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={<Settings />}
+                  />
+                </Routes>
+              </div>
+
+              {/* Footer */}
+              <footer className="main-footer">
+                <span>🏥 LifeLink Twin - Emergency Health IoT Digital Twin System</span>
+                <span className="footer-divider">•</span>
+                <span>Last Update: {lastUpdate || '--:--:--'}</span>
+              </footer>
+            </main>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </LanguageProvider>
   );
 }
 

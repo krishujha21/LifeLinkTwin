@@ -7,7 +7,8 @@
         "start:simulator": "node simulator/index.js",
         "start:edge": "node edge/index.js",
         "start:server": "node server/index.js",
-        "start:all": "concurrently \"npm run start:server\" \"npm run start:edge\" \"npm run start:simulator\""
+        "start:all": "concurrently \"npm run start:server\" \"npm run start:edge\" \"npm run start:simulator\"",
+        "test:auth": "node test-auth.js"
     },
     "keywords": [
         "iot",
@@ -19,9 +20,13 @@
     "author": "",
     "license": "MIT",
     "dependencies": {
+        "bcryptjs": "^3.0.3",
+        "concurrently": "^8.2.2",
+        "cookie-parser": "^1.4.7",
         "express": "^4.18.2",
+        "express-session": "^1.19.0",
+        "jsonwebtoken": "^9.0.3",
         "mqtt": "^5.3.0",
-        "socket.io": "^4.6.1",
-        "concurrently": "^8.2.2"
+        "socket.io": "^4.6.1"
     }
 }

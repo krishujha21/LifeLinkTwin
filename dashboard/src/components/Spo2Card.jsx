@@ -5,7 +5,11 @@
  * and a Bootstrap progress bar indicator.
  */
 
+import { useLanguage } from '../i18n';
+
 function Spo2Card({ value, status }) {
+    const { t } = useLanguage();
+
     // Calculate progress percentage (85-100% range)
     const progressPercent = value != null ? Math.max(0, Math.min(100, ((value - 85) / 15) * 100)) : 0;
 
@@ -25,10 +29,10 @@ function Spo2Card({ value, status }) {
     };
 
     const getStatusText = () => {
-        if (value == null) return { text: 'Waiting for data...', class: 'text-muted' };
-        if (value < 90) return { text: 'Critical - Hypoxemia', class: 'text-danger' };
+        if (value == null) return { text: `${t('waiting')}...`, class: 'text-muted' };
+        if (value < 90) return { text: `${t('critical')} - Hypoxemia`, class: 'text-danger' };
         if (value < 94) return { text: 'Low Oxygen', class: 'text-warning' };
-        return { text: 'Normal', class: 'text-success' };
+        return { text: t('normal'), class: 'text-success' };
     };
 
     const statusInfo = getStatusText();
@@ -40,7 +44,7 @@ function Spo2Card({ value, status }) {
                 <div className="d-flex justify-content-between align-items-center mb-3">
                     <div className="vital-header">
                         <span className="vital-icon">🫁</span>
-                        <span className="vital-title">Oxygen Saturation</span>
+                        <span className="vital-title">{t('spo2')}</span>
                     </div>
                     <span className="badge bg-dark">SpO₂</span>
                 </div>
