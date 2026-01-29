@@ -23,7 +23,6 @@ import MultiPatientCard from '../components/MultiPatientCard';
 // Advanced Features - Phase 2
 import AIExplanationCard from '../components/AIExplanationCard';
 import HandoverReportCard from '../components/HandoverReportCard';
-import EmergencyEscalationCard from '../components/EmergencyEscalationCard';
 import EdgeFailureBackupCard from '../components/EdgeFailureBackupCard';
 import DigitalTwinVisualizationCard from '../components/DigitalTwinVisualizationCard';
 import NationalEmergencyNetworkCard from '../components/NationalEmergencyNetworkCard';
@@ -189,15 +188,9 @@ function Dashboard({
                         </div>
                     </div>
 
-                    {/* Emergency Escalation & Digital Twin */}
+                    {/* Digital Twin Visualization */}
                     <div className="row g-3">
-                        <div className="col-12 col-lg-6">
-                            <EmergencyEscalationCard
-                                patientData={patientData}
-                                vitals={vitals}
-                            />
-                        </div>
-                        <div className="col-12 col-lg-6">
+                        <div className="col-12">
                             <DigitalTwinVisualizationCard
                                 vitals={vitals}
                                 patientData={patientData}
