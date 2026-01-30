@@ -26,7 +26,7 @@ import EdgeFailureBackupCard from '../components/EdgeFailureBackupCard';
 import DigitalTwinVisualizationCard from '../components/DigitalTwinVisualizationCard';
 import NationalEmergencyNetworkCard from '../components/NationalEmergencyNetworkCard';
 // AI Treatment Recommendations
-import AITreatmentRecommendationCard from '../components/AITreatmentRecommendationCard';
+
 
 // Role-Based Access Control
 import { isMedicalRole, isAdminRole, getRoleDisplayName, getRoleIcon } from '../utils/rbac';
@@ -115,16 +115,7 @@ function Dashboard({
                         </div>
                     </div>
 
-                    {/* AI Treatment Recommendations */}
-                    <div className="row g-3 mb-3">
-                        <div className="col-12">
-                            <AITreatmentRecommendationCard
-                                vitals={vitals}
-                                patientData={patientData}
-                                status={status}
-                            />
-                        </div>
-                    </div>
+
 
                     {/* Predictive Health & Hospital Readiness */}
                     <div className="row g-3 mb-3">
@@ -155,18 +146,6 @@ function Dashboard({
                         </div>
                     </div>
 
-                    {/* Advanced Medical Section */}
-                    <div className="row mb-3">
-                        <div className="col-12">
-                            <div className="section-divider d-flex align-items-center">
-                                <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
-                                <span className="px-3 text-muted" style={{ fontSize: '0.85rem' }}>
-                                    🧠 AI-Powered Medical Intelligence
-                                </span>
-                                <hr className="flex-grow-1" style={{ borderColor: '#374151' }} />
-                            </div>
-                        </div>
-                    </div>
 
                     {/* Handover Report */}
                     <div className="row g-3 mb-3">
