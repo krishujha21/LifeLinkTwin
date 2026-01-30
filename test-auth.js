@@ -51,6 +51,7 @@ async function testProtectedEndpoint(token) {
     try {
         const response = await fetch(`${BASE_URL}/api/patients`, {
             headers: { 'Authorization': `Bearer ${token}` }
+
         });
 
         const data = await response.json();

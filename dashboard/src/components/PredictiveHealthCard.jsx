@@ -114,6 +114,35 @@ function PredictiveHealthCard({ vitals, history }) {
         }
     };
 
+    // Worsen situation trigger state
+    const [triggered, setTriggered] = useState(false);
+    const [hospitalMsg, setHospitalMsg] = useState("");
+
+    useEffect(() => {
+        if (prediction.riskScore > 50) {
+            // Only send auto message if not triggered manually
+            if (!triggered) {
+                const msg = `Risk above 50%. Hospital notified to prepare required things at ${new Date().toLocaleTimeString()}.`;
+                setHospitalMsg(msg);
+                if (window) window._hospitalTriggerMsg = msg;
+            }
+        } else {
+            setHospitalMsg("");
+            if (window) window._hospitalTriggerMsg = "";
+        }
+    }, [prediction.riskScore, triggered]);
+
+    const handleTrigger = () => {
+        setTriggered(true);
+        const msg = `Worsen situation triggered at ${new Date().toLocaleTimeString()}. Hospital notified.`;
+        setHospitalMsg(msg);
+        if (window) {
+            window._hospitalTriggerMsg = msg;
+            window.dispatchEvent(new CustomEvent('hospitalTrigger', { detail: msg }));
+        }
+        // Here you could add logic to send a message to hospital backend/API
+    };
+
     return (
         <div className="card vital-card">
             <div className="card-body">
@@ -188,7 +217,7 @@ function PredictiveHealthCard({ vitals, history }) {
                             <div key={idx} className="d-flex justify-content-between align-items-center mb-1">
                                 <span className="small">
                                     <span className={`badge me-1 ${factor.severity === 'critical' ? 'bg-danger' :
-                                            factor.severity === 'high' ? 'bg-warning text-dark' : 'bg-info'
+                                        factor.severity === 'high' ? 'bg-warning text-dark' : 'bg-info'
                                         }`} style={{ fontSize: '0.6rem' }}>
                                         {factor.severity.toUpperCase()}
                                     </span>
@@ -212,6 +241,21 @@ function PredictiveHealthCard({ vitals, history }) {
                         <small className="text-info">87%</small>
                     </div>
                 </div>
+
+                {/* Trigger Button for Worsen Situation (always shown below AI confidence) */}
+                {!triggered && (
+                    <div className="mt-3 text-center">
+                        <button className="btn btn-danger" onClick={handleTrigger}>
+                            Trigger Worsen Situation
+                        </button>
+                    </div>
+                )}
+                {/* Only show one hospital message, prefer manual trigger if present */}
+                {hospitalMsg && (
+                    <div className="alert alert-warning text-center mt-3">
+                        {hospitalMsg}
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -118,6 +118,21 @@ function HospitalReadinessCard({ patientData, eta }) {
         }
     };
 
+    // Accept hospitalMsg from parent (Dashboard) via prop if available
+    // For now, try to read from window if set by PredictiveHealthCard (simple demo, not production)
+    const [triggerMsg, setTriggerMsg] = useState("");
+    useEffect(() => {
+        const handleTrigger = (e) => {
+            setTriggerMsg(e.detail);
+        };
+        window.addEventListener('hospitalTrigger', handleTrigger);
+        // Also check initial value
+        if (window && window._hospitalTriggerMsg) {
+            setTriggerMsg(window._hospitalTriggerMsg);
+        }
+        return () => window.removeEventListener('hospitalTrigger', handleTrigger);
+    }, []);
+
     return (
         <div className="card vital-card">
             <div className="card-body">
@@ -141,6 +156,13 @@ function HospitalReadinessCard({ patientData, eta }) {
                         />
                     </div>
                 </div>
+
+                {/* Trigger Message from Predictive Health (show only if not empty) */}
+                {triggerMsg && (
+                    <div className="alert alert-warning text-center mb-3">
+                        {triggerMsg}
+                    </div>
+                )}
 
                 {/* Department Status Grid */}
                 <div className="department-grid">

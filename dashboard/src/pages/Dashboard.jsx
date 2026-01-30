@@ -21,7 +21,6 @@ import HospitalReadinessCard from '../components/HospitalReadinessCard';
 import ScenarioPlaybackCard from '../components/ScenarioPlaybackCard';
 import MultiPatientCard from '../components/MultiPatientCard';
 // Advanced Features - Phase 2
-import AIExplanationCard from '../components/AIExplanationCard';
 import HandoverReportCard from '../components/HandoverReportCard';
 import EdgeFailureBackupCard from '../components/EdgeFailureBackupCard';
 import DigitalTwinVisualizationCard from '../components/DigitalTwinVisualizationCard';
@@ -169,16 +168,9 @@ function Dashboard({
                         </div>
                     </div>
 
-                    {/* AI Explanation & Handover Report */}
+                    {/* Handover Report */}
                     <div className="row g-3 mb-3">
-                        <div className="col-12 col-lg-6">
-                            <AIExplanationCard
-                                vitals={vitals}
-                                prediction={null}
-                                patientData={patientData}
-                            />
-                        </div>
-                        <div className="col-12 col-lg-6">
+                        <div className="col-12">
                             <HandoverReportCard
                                 patientData={patientData}
                                 vitals={vitals}

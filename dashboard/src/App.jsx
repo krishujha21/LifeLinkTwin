@@ -1,9 +1,3 @@
-/**
- * LifeLink Twin - Main App Component
- * 
- * React dashboard for real-time emergency health monitoring.
- * Connects to backend via Socket.io and displays digital twin data.
- */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';

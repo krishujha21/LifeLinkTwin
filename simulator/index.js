@@ -1,12 +1,3 @@
-/**
- * LifeLink Twin - Realistic Vital Data Simulator
- * 
- * This script simulates patient vitals from an ambulance.
- * It publishes realistic vital signs with smooth transitions
- * and medical scenarios to an MQTT broker.
- * 
- * Topics: lifelink/patient1/vitals
- */
 
 const mqtt = require('mqtt');
 

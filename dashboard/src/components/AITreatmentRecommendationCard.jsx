@@ -252,16 +252,16 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                     </div>
                     <div className="d-flex align-items-center gap-2">
                         {isAnalyzing ? (
-                            <span className="badge" style={{ 
-                                background: 'rgba(139, 92, 246, 0.2)', 
+                            <span className="badge" style={{
+                                background: 'rgba(139, 92, 246, 0.2)',
                                 color: '#a78bfa',
                                 animation: 'pulse 1s infinite'
                             }}>
                                 <span style={{ marginRight: '4px' }}>⚡</span> Analyzing...
                             </span>
                         ) : (
-                            <span className="badge" style={{ 
-                                background: 'rgba(16, 185, 129, 0.2)', 
+                            <span className="badge" style={{
+                                background: 'rgba(16, 185, 129, 0.2)',
                                 color: '#10b981'
                             }}>
                                 <span style={{ marginRight: '4px' }}>✓</span> AI Ready
@@ -277,15 +277,15 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                 }}>
                     <span>🧠</span>
                     <span style={{ color: 'var(--text-secondary)' }}>
-                        Powered by <strong style={{ color: 'var(--accent-purple, #8b5cf6)' }}>LifeLink AI Engine</strong> • 
-                        Analyzing {recommendations.length} protocols • 
+                        Powered by <strong style={{ color: 'var(--accent-purple, #8b5cf6)' }}>LifeLink AI Engine</strong> •
+                        Analyzing {recommendations.length} protocols •
                         Last update: <span style={{ color: 'var(--accent-cyan, #06b6d4)' }}>{new Date().toLocaleTimeString()}</span>
                     </span>
                 </div>
 
                 {/* Recommendations List */}
-                <div className="recommendations-list" style={{ 
-                    maxHeight: '400px', 
+                <div className="recommendations-list" style={{
+                    maxHeight: '400px',
                     overflowY: 'auto',
                     paddingRight: '4px'
                 }}>
@@ -294,7 +294,7 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                         const isExpanded = expandedRecommendation === rec.id;
 
                         return (
-                            <div 
+                            <div
                                 key={rec.id}
                                 className="recommendation-item mb-2"
                                 style={{
@@ -317,10 +317,10 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                                                 {rec.title}
                                             </div>
                                             <div className="d-flex align-items-center gap-2 mt-1">
-                                                <span 
+                                                <span
                                                     className="badge"
-                                                    style={{ 
-                                                        background: colors.border, 
+                                                    style={{
+                                                        background: colors.border,
                                                         color: 'white',
                                                         fontSize: '0.65rem',
                                                         fontWeight: 700
@@ -328,16 +328,16 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                                                 >
                                                     {getPriorityLabel(rec.priority)}
                                                 </span>
-                                                <span style={{ 
-                                                    fontSize: '0.7rem', 
-                                                    color: 'var(--text-muted)' 
+                                                <span style={{
+                                                    fontSize: '0.7rem',
+                                                    color: 'var(--text-muted)'
                                                 }}>
                                                     {rec.confidence}% confidence
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <span style={{ 
+                                    <span style={{
                                         color: 'var(--text-muted)',
                                         transition: 'transform 0.2s',
                                         transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
@@ -347,8 +347,8 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                                 </div>
 
                                 {/* Description */}
-                                <p style={{ 
-                                    fontSize: '0.8rem', 
+                                <p style={{
+                                    fontSize: '0.8rem',
                                     color: 'var(--text-secondary)',
                                     marginBottom: isExpanded ? '12px' : '0',
                                     lineHeight: 1.5
@@ -358,23 +358,23 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
 
                                 {/* Expanded Actions */}
                                 {isExpanded && (
-                                    <div 
+                                    <div
                                         className="actions-list mt-2 pt-2"
-                                        style={{ 
+                                        style={{
                                             borderTop: `1px solid ${colors.border}`,
                                             animation: 'fadeIn 0.3s ease'
                                         }}
                                     >
-                                        <div className="fw-bold mb-2" style={{ 
-                                            fontSize: '0.75rem', 
+                                        <div className="fw-bold mb-2" style={{
+                                            fontSize: '0.75rem',
                                             color: colors.text,
                                             textTransform: 'uppercase',
                                             letterSpacing: '0.05em'
                                         }}>
                                             Recommended Actions:
                                         </div>
-                                        <ol style={{ 
-                                            paddingLeft: '1.25rem', 
+                                        <ol style={{
+                                            paddingLeft: '1.25rem',
                                             margin: 0,
                                             fontSize: '0.8rem',
                                             color: 'var(--text-primary)'
@@ -385,7 +385,7 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                                                 </li>
                                             ))}
                                         </ol>
-                                        <div className="mt-2 pt-2" style={{ 
+                                        <div className="mt-2 pt-2" style={{
                                             borderTop: '1px dashed var(--border-color)',
                                             fontSize: '0.7rem',
                                             color: 'var(--text-muted)'
@@ -408,7 +408,7 @@ function AITreatmentRecommendationCard({ vitals, patientData, status }) {
                     <span>
                         ⚕️ AI recommendations are advisory only. Clinical judgment required.
                     </span>
-                    <span className="badge" style={{ 
+                    <span className="badge" style={{
                         background: 'var(--bg-secondary)',
                         color: 'var(--text-secondary)'
                     }}>
