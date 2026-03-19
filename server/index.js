@@ -12,6 +12,7 @@
  * WebSocket Events: 'vitals-update', 'patient-status'
  */
 
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -19,6 +20,8 @@ const mqtt = require('mqtt');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 
 // Import authentication module
 const {
@@ -26,6 +29,7 @@ const {
     authenticateUser,
     registerUser,
     authMiddleware,
+    verifyToken,
 } = require('./auth');
 
 // Configuration
@@ -40,8 +44,9 @@ const server = http.createServer(app);
 // Initialize Socket.io for real-time WebSocket communication
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow all origins for hackathon demo
-        methods: ["GET", "POST"]
+        origin: process.env.DASHBOARD_URL || "http://localhost:5173",
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
@@ -61,15 +66,31 @@ const vitalHistory = {
 const MAX_HISTORY = 60;
 
 // Middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "script-src": ["'self'", "https://cdn.jsdelivr.net", "'unsafe-inline'"], // Allow Chart.js and some inline scripts for demo
+            "img-src": ["'self'", "data:", "https:"],
+        },
+    },
+})); // Secure HTTP headers
 app.use(express.json());
 app.use(cookieParser());
 
 // CORS middleware for dashboard
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    const origin = req.headers.origin;
+    const allowedOrigins = [process.env.DASHBOARD_URL || 'http://localhost:5173', 'http://localhost:3000'];
+
+    if (allowedOrigins.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
+
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
@@ -81,10 +102,28 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Set to true in production with HTTPS
+        secure: process.env.NODE_ENV === 'production', // Set to true in production with HTTPS
+        httpOnly: true,
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
+
+// Rate limiting
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: 'Too many requests from this IP, please try again after 15 minutes'
+    }
+});
+
+// Apply rate limiting to auth routes
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 // Initialize default users
 createDefaultUsers();
@@ -116,7 +155,8 @@ app.post('/api/auth/login', async (req, res) => {
         // Set token in cookie
         res.cookie('token', result.token, {
             httpOnly: true,
-            secure: false, // Set to true in production with HTTPS
+            secure: process.env.NODE_ENV === 'production', // Set to true in production with HTTPS
+            sameSite: 'lax',
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
@@ -314,6 +354,27 @@ function updateHistory(data) {
         history.temperature.shift();
     }
 }
+
+// WebSocket Authentication Middleware
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token ||
+                  socket.handshake.headers?.authorization?.split(' ')[1] ||
+                  socket.handshake.headers?.cookie?.split('token=')[1]?.split(';')[0];
+
+    if (!token) {
+        console.log(`🔌 WebSocket connection rejected: No token (${socket.id})`);
+        return next(new Error('Authentication error: No token provided'));
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded) {
+        console.log(`🔌 WebSocket connection rejected: Invalid token (${socket.id})`);
+        return next(new Error('Authentication error: Invalid or expired token'));
+    }
+
+    socket.user = decoded;
+    next();
+});
 
 // WebSocket connection handler
 io.on('connection', (socket) => {

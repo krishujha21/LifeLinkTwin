@@ -8,7 +8,15 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Secret key for JWT - In production, use environment variable
-const JWT_SECRET = process.env.JWT_SECRET || 'lifelink-twin-secret-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+    console.error('❌ FATAL ERROR: JWT_SECRET is not defined in production environment');
+    process.exit(1);
+}
+
+const DEFAULT_SECRET = 'lifelink-twin-secret-key-change-in-production';
+const ACTIVE_SECRET = JWT_SECRET || DEFAULT_SECRET;
 const JWT_EXPIRES_IN = '24h';
 
 // In-memory user store (In production, use a real database)
@@ -19,7 +27,7 @@ const createDefaultUsers = async () => {
     const defaultUsers = [
         {
             username: 'doctor',
-            password: 'doctor123',
+            password: process.env.DEFAULT_DOCTOR_PASSWORD || 'Doctor123!',
             role: 'doctor',
             name: 'Dr. Smith',
             email: 'doctor@lifelink.com'
@@ -38,8 +46,10 @@ const createDefaultUsers = async () => {
         });
     }
 
-    console.log('✅ Default users created:');
-    console.log('   👨‍⚕️ doctor/doctor123 (Doctor)');
+    console.log('✅ Default users created.');
+    if (!process.env.DEFAULT_DOCTOR_PASSWORD) {
+        console.log('   ⚠️ WARNING: Using default password for doctor. Change this in production!');
+    }
 };
 
 /**
@@ -74,7 +84,7 @@ const generateToken = (user) => {
         name: user.name,
         email: user.email
     };
-    return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+    return jwt.sign(payload, ACTIVE_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 /**
@@ -84,10 +94,29 @@ const generateToken = (user) => {
  */
 const verifyToken = (token) => {
     try {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, ACTIVE_SECRET);
     } catch (error) {
         return null;
     }
+};
+
+/**
+ * Email validation helper
+ */
+const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+/**
+ * Password complexity validation helper
+ */
+const isStrongPassword = (password) => {
+    // At least 8 characters, one uppercase, one lowercase, one number
+    return password.length >= 8 &&
+        /[a-z]/.test(password) &&
+        /[A-Z]/.test(password) &&
+        /[0-9]/.test(password);
 };
 
 /**
@@ -104,16 +133,23 @@ const registerUser = async (userData) => {
     }
 
     // Validation
-    if (!username || !password || !name) {
-        return { success: false, message: 'Username, password, and name are required' };
+    if (!username || !password || !name || !email) {
+        return { success: false, message: 'Username, password, name, and email are required' };
+    }
+
+    if (!isValidEmail(email)) {
+        return { success: false, message: 'Invalid email format' };
     }
 
     if (users.has(username)) {
         return { success: false, message: 'Username already exists' };
     }
 
-    if (password.length < 6) {
-        return { success: false, message: 'Password must be at least 6 characters' };
+    if (!isStrongPassword(password)) {
+        return {
+            success: false,
+            message: 'Password must be at least 8 characters and include uppercase, lowercase, and numbers'
+        };
     }
 
     // Hash password

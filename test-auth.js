@@ -179,11 +179,13 @@ async function runTests() {
     console.log('🔐 LifeLink Twin - Authentication Test Suite');
     console.log('='.repeat(60) + '\n');
 
+    const DEFAULT_PASS = process.env.DEFAULT_DOCTOR_PASSWORD || 'Doctor123!';
+
     log.info('Testing authentication system...\n');
 
     // Test 1: Login with valid credentials
     console.log('Test 1: Login with valid credentials');
-    const doctorToken = await testLogin('doctor', 'doctor123');
+    const doctorToken = await testLogin('doctor', DEFAULT_PASS);
     console.log();
 
     if (!doctorToken) {
@@ -221,7 +223,7 @@ async function runTests() {
     const newDoctorUsername = `doctor_test_${Date.now()}`;
     await testRegisterDoctor({
         username: newDoctorUsername,
-        password: 'doctor123',
+        password: 'SecurePassword123!',
         name: 'Dr. Test',
         email: 'doctor.test@lifelink.com',
         role: 'doctor'
@@ -233,6 +235,26 @@ async function runTests() {
         name: 'Not Allowed',
         email: 'not.allowed@lifelink.com',
         role: 'user'
+    });
+
+    // Test 8: Invalid email registration
+    console.log('Test 8: Invalid email registration');
+    await testRegisterDoctor({
+        username: `doctor_bad_email_${Date.now()}`,
+        password: 'SecurePassword123!',
+        name: 'Dr. Bad Email',
+        email: 'invalid-email',
+        role: 'doctor'
+    });
+
+    // Test 9: Weak password registration
+    console.log('Test 9: Weak password registration');
+    await testRegisterDoctor({
+        username: `doctor_weak_pass_${Date.now()}`,
+        password: 'weak',
+        name: 'Dr. Weak Pass',
+        email: 'weak@lifelink.com',
+        role: 'doctor'
     });
     console.log();
 
