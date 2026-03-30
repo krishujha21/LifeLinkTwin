@@ -6,7 +6,8 @@
 
 // Role definitions
 export const ROLES = {
-    DOCTOR: 'doctor'
+    DOCTOR: 'doctor',
+    ATTENDANT: 'attendant'
 };
 
 // Menu items accessible by doctor
@@ -90,9 +91,11 @@ export const getVisibleDashboardSections = (role) => {
 export const getRoleDisplayName = (role) => {
     switch (role) {
         case ROLES.DOCTOR:
+            return 'Medical Doctor';
+        case ROLES.ATTENDANT:
             return 'Family & Attendant';
         default:
-            return 'Family & Attendant';
+            return 'Guest';
     }
 };
 
@@ -102,9 +105,11 @@ export const getRoleDisplayName = (role) => {
 export const getRoleIcon = (role) => {
     switch (role) {
         case ROLES.DOCTOR:
+            return '👨‍⚕️';
+        case ROLES.ATTENDANT:
             return '👨‍👩‍👧‍👦';
         default:
-            return '👨‍👩‍👧‍👦';
+            return '👤';
     }
 };
 

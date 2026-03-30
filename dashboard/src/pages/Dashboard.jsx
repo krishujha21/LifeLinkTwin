@@ -10,6 +10,9 @@ import Spo2Card from '../components/Spo2Card';
 import TemperatureCard from '../components/TemperatureCard';
 import StatusCard from '../components/StatusCard';
 import PredictiveHealthCard from '../components/PredictiveHealthCard';
+import HospitalReadinessCard from '../components/HospitalReadinessCard';
+import MultiPatientCard from '../components/MultiPatientCard';
+import DoctorAlertReviewCard from '../components/DoctorAlertReviewCard';
 
 // Role-Based Access Control
 import { isMedicalRole, getRoleIcon } from '../utils/rbac';
@@ -73,83 +76,174 @@ function Dashboard({
         </div>
     );
 
-    // Doctor Dashboard
-    if (isMedicalRole(userRole)) {
-        return (
-            <>
-                {/* Page Header */}
-                <div className="page-header mb-4">
-                    <h1 className="page-title">{getRoleIcon(userRole)} Family Tracking Portal</h1>
-                    <p className="page-subtitle">
-                        Live Tracking & Vitals Monitor
-                        {patientData && (
-                            <span className="ms-3 badge bg-info" style={{ fontSize: '1.1rem', padding: '0.5rem 1rem' }}>
-                                Transit: {patientData.patientName} ({patientData.ambulance})
-                            </span>
-                        )}
-                    </p>
-                </div>
-
-                <div className="space-y-8">
-                    <DashboardGrid>
-                        {/* Live Location Module (Full Width Top Priority) */}
-                        <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0 mb-4">
-                            <Suspense fallback={<CardFallback title="Ambulance Tracker" />}>
-                                <AmbulanceTrackerCard />
-                            </Suspense>
-                        </div>
-
-                        {/* High-Level Status Summary */}
-                        <div className="sm:col-span-2 min-w-0">
-                            <StatusCard
-                                status={status}
-                                patientName={patientData?.patientName}
-                                patientId={patientData?.patientId}
-                                alerts={patientData?.alerts}
-                            />
-                        </div>
-                        <div className="sm:col-span-2 min-w-0">
-                            <PredictiveHealthCard
-                                vitals={vitals}
-                                history={history}
-                                patientId={selectedPatientId}
-                                simulatorOn={simulatorOn}
-                                worsenState={worsenState}
-                                onTriggerWorsen={onTriggerWorsen}
-                                onStopWorsen={onStopWorsen}
-                            />
-                        </div>
-
-                        {/* Vitals Feed (Second Priority) */}
-                        <div className="min-w-0">
-                            <HeartRateCard value={vitals.heartRate} history={history} status={status} />
-                        </div>
-                        <div className="min-w-0">
-                            <Spo2Card value={vitals.spo2} status={status} />
-                        </div>
-                        <div className="min-w-0">
-                            <TemperatureCard value={vitals.temperature} status={status} />
-                        </div>
-
-                        {/* Digital Twin View */}
-                        <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0 mt-4">
-                            <Suspense fallback={<CardFallback title="Digital Twin Visualization" />}>
-                                <DigitalTwinVisualizationCard vitals={vitals} patientData={patientData} />
-                            </Suspense>
-                        </div>
-                    </DashboardGrid>
-                </div>
-            </>
-        );
-    }
-    return (
+    // Doctor Dashboard Layout
+    const renderDoctorDashboard = () => (
         <>
+            {/* Page Header */}
             <div className="page-header mb-4">
-                <h1 className="page-title">🔒 Access Restricted</h1>
-                <p className="page-subtitle">This dashboard is available to doctors only.</p>
+                <h1 className="page-title">{getRoleIcon(userRole)} Patient Care Dashboard</h1>
+                <p className="page-subtitle">
+                    Real-time patient monitoring • {patients?.length || 0} Digital Twins Active
+                    {patientData && (
+                        <span className="ms-2 badge bg-info">
+                            Viewing: {patientData.patientName} ({patientData.ambulance})
+                        </span>
+                    )}
+                </p>
+            </div>
+
+            <div className="space-y-8">
+                <DashboardGrid>
+                    {/* Multi-Patient Overview (full width) */}
+                    {patients && patients.length > 0 && (
+                        <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0">
+                            <MultiPatientCard
+                                patients={patients}
+                                allPatientsData={allPatientsData}
+                                doctorMetricsByPatientId={doctorMetricsByPatientId}
+                                selectedPatientId={selectedPatientId}
+                                onSelectPatient={onSelectPatient}
+                            />
+                        </div>
+                    )}
+
+                    {/* Alert Review (full width) */}
+                    {patients && patients.length > 0 && (
+                        <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0">
+                            <DoctorAlertReviewCard
+                                patients={patients}
+                                allPatientsData={allPatientsData}
+                                doctorMetricsByPatientId={doctorMetricsByPatientId}
+                                onSelectPatient={onSelectPatient}
+                            />
+                        </div>
+                    )}
+
+                    {/* Primary vitals */}
+                    <div className="min-w-0">
+                        <HeartRateCard value={vitals.heartRate} history={history} status={status} />
+                    </div>
+                    <div className="min-w-0">
+                        <Spo2Card value={vitals.spo2} status={status} />
+                    </div>
+                    <div className="min-w-0">
+                        <TemperatureCard value={vitals.temperature} status={status} />
+                    </div>
+                    <div className="min-w-0">
+                        <StatusCard
+                            status={status}
+                            patientName={patientData?.patientName}
+                            patientId={patientData?.patientId}
+                            alerts={patientData?.alerts}
+                        />
+                    </div>
+
+                    {/* Secondary insights */}
+                    <div className="sm:col-span-2 min-w-0">
+                        <PredictiveHealthCard
+                            vitals={vitals}
+                            history={history}
+                            patientId={selectedPatientId}
+                            simulatorOn={simulatorOn}
+                            worsenState={worsenState}
+                            onTriggerWorsen={onTriggerWorsen}
+                            onStopWorsen={onStopWorsen}
+                        />
+                    </div>
+                    <div className="sm:col-span-2 min-w-0">
+                        <HospitalReadinessCard patientData={patientData} />
+                    </div>
+
+                    {/* Larger widgets */}
+                    <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0">
+                        <Suspense fallback={<CardFallback title="Ambulance Tracker" />}>
+                            <AmbulanceTrackerCard />
+                        </Suspense>
+                    </div>
+                    <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0">
+                        <Suspense fallback={<CardFallback title="Digital Twin Visualization" />}>
+                            <DigitalTwinVisualizationCard vitals={vitals} patientData={patientData} />
+                        </Suspense>
+                    </div>
+                </DashboardGrid>
             </div>
         </>
     );
+
+    // Attendant / Family Tracking Layout
+    const renderAttendantDashboard = () => (
+        <>
+            {/* Page Header */}
+            <div className="page-header mb-4">
+                <h1 className="page-title">{getRoleIcon(userRole)} Family Tracking Portal</h1>
+                <p className="page-subtitle">
+                    Live Tracking & Vitals Monitor
+                    {patientData && (
+                        <span className="ms-3 badge bg-info" style={{ fontSize: '1.1rem', padding: '0.5rem 1rem' }}>
+                            Transit: {patientData.patientName} ({patientData.ambulance})
+                        </span>
+                    )}
+                </p>
+            </div>
+
+            <div className="space-y-8">
+                <DashboardGrid>
+                    {/* Live Location Module (Full Width Top Priority) */}
+                    <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0 mb-4">
+                        <Suspense fallback={<CardFallback title="Ambulance Tracker" />}>
+                            <AmbulanceTrackerCard />
+                        </Suspense>
+                    </div>
+
+                    {/* High-Level Status Summary */}
+                    <div className="sm:col-span-2 min-w-0">
+                        <StatusCard
+                            status={status}
+                            patientName={patientData?.patientName}
+                            patientId={patientData?.patientId}
+                            alerts={patientData?.alerts}
+                        />
+                    </div>
+                    <div className="sm:col-span-2 min-w-0">
+                        <PredictiveHealthCard
+                            vitals={vitals}
+                            history={history}
+                            patientId={selectedPatientId}
+                            simulatorOn={simulatorOn}
+                            worsenState={worsenState}
+                            onTriggerWorsen={onTriggerWorsen}
+                            onStopWorsen={onStopWorsen}
+                        />
+                    </div>
+
+                    {/* Vitals Feed (Second Priority) */}
+                    <div className="min-w-0">
+                        <HeartRateCard value={vitals.heartRate} history={history} status={status} />
+                    </div>
+                    <div className="min-w-0">
+                        <Spo2Card value={vitals.spo2} status={status} />
+                    </div>
+                    <div className="min-w-0">
+                        <TemperatureCard value={vitals.temperature} status={status} />
+                    </div>
+
+                    {/* Digital Twin View */}
+                    <div className="sm:col-span-2 lg:col-span-3 2xl:col-span-4 min-w-0 mt-4">
+                        <Suspense fallback={<CardFallback title="Digital Twin Visualization" />}>
+                            <DigitalTwinVisualizationCard vitals={vitals} patientData={patientData} />
+                        </Suspense>
+                    </div>
+                </DashboardGrid>
+            </div>
+        </>
+    );
+
+    // Route rendering based on RBAC Policy
+    if (isMedicalRole(userRole)) {
+        return renderDoctorDashboard();
+    }
+
+    return renderAttendantDashboard();
 }
 
 export default Dashboard;

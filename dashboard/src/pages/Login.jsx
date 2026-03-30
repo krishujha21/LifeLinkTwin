@@ -11,7 +11,8 @@ import { API_BASE_URL } from '../config/api';
 
 // Demo users for when backend is not available (production demo)
 const DEMO_USERS = {
-    attendant: { username: 'attendant', password: 'password123', role: 'doctor', name: 'Divvya\'s Family', email: 'family@lifelink.com' }
+    doctor: { username: 'doctor', password: 'doctor123', role: 'doctor', name: 'Dr. Smith', email: 'doctor@lifelink.com' },
+    attendant: { username: 'attendant', password: 'password123', role: 'attendant', name: 'Divvya\'s Family', email: 'family@lifelink.com' }
 };
 
 function Login({ onLogin }) {
@@ -59,10 +60,7 @@ function Login({ onLogin }) {
             const data = await response.json();
 
             if (data.success) {
-                if (data.user?.role && data.user.role !== 'doctor') {
-                    setError('Access restricted: doctor-only dashboard.');
-                    return;
-                }
+                // Roles are strictly mapped internally now.
                 // Store token and user info
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.user));
@@ -167,13 +165,24 @@ function Login({ onLogin }) {
                         <div className="credential-list">
                             <button
                                 type="button"
-                                className="credential-btn"
+                                className="credential-btn mb-3"
                                 onClick={() => fillCredentials('attendant', 'password123')}
                             >
                                 <span className="role-icon">👨‍👩‍👧‍👦</span>
                                 <div className="credential-info">
                                     <span className="credential-user">attendant</span>
                                     <span className="credential-role">Family Tracking Portal</span>
+                                </div>
+                            </button>
+                            <button
+                                type="button"
+                                className="credential-btn"
+                                onClick={() => fillCredentials('doctor', 'doctor123')}
+                            >
+                                <span className="role-icon">👨‍⚕️</span>
+                                <div className="credential-info">
+                                    <span className="credential-user">doctor</span>
+                                    <span className="credential-role">Medical Doctor</span>
                                 </div>
                             </button>
                         </div>
