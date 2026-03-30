@@ -18,11 +18,11 @@ const users = new Map();
 const createDefaultUsers = async () => {
     const defaultUsers = [
         {
-            username: 'doctor',
-            password: 'doctor123',
-            role: 'doctor',
-            name: 'Dr. Smith',
-            email: 'doctor@lifelink.com'
+            username: 'attendant',
+            password: 'password123',
+            role: 'doctor', // Keep internal role the same to pass existing RBAC checks
+            name: 'Divvya\'s Family',
+            email: 'family@lifelink.com'
         }
     ];
 
@@ -39,7 +39,7 @@ const createDefaultUsers = async () => {
     }
 
     console.log('✅ Default users created:');
-    console.log('   👨‍⚕️ doctor/doctor123 (Doctor)');
+    console.log('   👨‍👩‍👧‍👦 attendant/password123 (Family Portal Access)');
 };
 
 /**

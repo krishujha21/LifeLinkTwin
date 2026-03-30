@@ -11,7 +11,7 @@ import { API_BASE_URL } from '../config/api';
 
 // Demo users for when backend is not available (production demo)
 const DEMO_USERS = {
-    doctor: { username: 'doctor', password: 'doctor123', role: 'doctor', name: 'Dr. Smith', email: 'doctor@lifelink.com' }
+    attendant: { username: 'attendant', password: 'password123', role: 'doctor', name: 'Divvya\'s Family', email: 'family@lifelink.com' }
 };
 
 function Login({ onLogin }) {
@@ -163,17 +163,17 @@ function Login({ onLogin }) {
                     </form>
 
                     <div className="demo-credentials">
-                        <h4>🔑 Demo Credentials</h4>
+                        <h4>🔑 Access Credentials</h4>
                         <div className="credential-list">
                             <button
                                 type="button"
                                 className="credential-btn"
-                                onClick={() => fillCredentials('doctor', 'doctor123')}
+                                onClick={() => fillCredentials('attendant', 'password123')}
                             >
-                                <span className="role-icon">👨‍⚕️</span>
+                                <span className="role-icon">👨‍👩‍👧‍👦</span>
                                 <div className="credential-info">
-                                    <span className="credential-user">doctor</span>
-                                    <span className="credential-role">Medical Doctor</span>
+                                    <span className="credential-user">attendant</span>
+                                    <span className="credential-role">Family Tracking Portal</span>
                                 </div>
                             </button>
                         </div>
