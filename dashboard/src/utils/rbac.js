@@ -90,9 +90,9 @@ export const getVisibleDashboardSections = (role) => {
 export const getRoleDisplayName = (role) => {
     switch (role) {
         case ROLES.DOCTOR:
-            return 'Doctor';
+            return 'Family & Attendant';
         default:
-            return 'Doctor';
+            return 'Family & Attendant';
     }
 };
 
@@ -102,9 +102,9 @@ export const getRoleDisplayName = (role) => {
 export const getRoleIcon = (role) => {
     switch (role) {
         case ROLES.DOCTOR:
-            return '👨‍⚕️';
+            return '👨‍👩‍👧‍👦';
         default:
-            return '👨‍⚕️';
+            return '👨‍👩‍👧‍👦';
     }
 };
 
