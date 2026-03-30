@@ -7,11 +7,13 @@
 
 import { io } from 'socket.io-client';
 
-// Backend server URL - use relative path in production, localhost in development
+const RENDER_BACKEND = 'https://lifelinktwin.onrender.com';
+
+// Backend server URL - use Render in production, localhost in development
 const getSocketUrl = () => {
-    // In production, socket connects to the same origin
+    // In production, socket connects to the Render backend
     if (import.meta.env.PROD) {
-        return window.location.origin;
+        return RENDER_BACKEND;
     }
     // In development
     return 'http://localhost:3000';

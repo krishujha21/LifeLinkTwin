@@ -4,11 +4,13 @@
  * Handles API URL for both development and production
  */
 
+const RENDER_BACKEND = 'https://lifelinktwin.onrender.com';
+
 // Determine the API base URL based on environment
 const getApiUrl = () => {
-    // In production (Vercel), use relative paths - the API is on the same domain
+    // In production, point to the Render backend
     if (import.meta.env.PROD) {
-        return '';  // Empty string for relative URLs
+        return RENDER_BACKEND;
     }
     // In development, use localhost
     return 'http://localhost:3000';

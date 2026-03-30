@@ -40,8 +40,14 @@ const server = http.createServer(app);
 // Initialize Socket.io for real-time WebSocket communication
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow all origins for hackathon demo
-        methods: ["GET", "POST"]
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'https://lifelinktwin.vercel.app',
+            /\.vercel\.app$/  // Allow any Vercel preview deployments
+        ],
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
@@ -66,7 +72,15 @@ app.use(cookieParser());
 
 // CORS middleware for dashboard
 app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:5173');
+    const allowedOrigins = [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'https://lifelinktwin.vercel.app'
+    ];
+    const origin = req.headers.origin;
+    if (!origin || allowedOrigins.some(o => typeof o === 'string' ? o === origin : o.test(origin))) {
+        res.header('Access-Control-Allow-Origin', origin || '*');
+    }
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
