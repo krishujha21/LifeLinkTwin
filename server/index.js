@@ -29,9 +29,10 @@ const {
 } = require('./auth');
 
 // Configuration
-const PORT = 3000;
-const MQTT_BROKER = 'mqtt://localhost:1883';
+const PORT = process.env.PORT || 3000;
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://localhost:1883';
 const MQTT_TOPIC = 'lifelink/patient1/processed';
+const MQTT_ENABLED = process.env.MQTT_ENABLED !== 'false'; // set MQTT_ENABLED=false on Render
 
 // Initialize Express app
 const app = express();
@@ -233,67 +234,66 @@ app.get('/api/health', (req, res) => {
     res.json({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        mqtt: mqttClient.connected ? 'connected' : 'disconnected',
+        mqtt: mqttClient ? (mqttClient.connected ? 'connected' : 'disconnected') : 'disabled',
         clients: io.engine.clientsCount
     });
 });
 
-// Connect to MQTT broker
-const mqttClient = mqtt.connect(MQTT_BROKER);
+// ==================== MQTT (optional) ====================
+let mqttClient = null;
 
-mqttClient.on('connect', () => {
-    console.log('🌐 Cloud Server connected to MQTT broker');
-    console.log(`📥 Subscribing to: ${MQTT_TOPIC}`);
-
-    mqttClient.subscribe(MQTT_TOPIC, (err) => {
-        if (err) {
-            console.error('❌ MQTT Subscribe error:', err);
-        } else {
-            console.log('✅ MQTT subscription active');
-        }
-    });
-});
-
-// Handle incoming MQTT messages
-mqttClient.on('message', (topic, message) => {
+if (MQTT_ENABLED) {
     try {
-        const data = JSON.parse(message.toString());
-
-        // Store latest data
-        patientData.set(data.patientId, data);
-
-        // Update history for charts
-        updateHistory(data);
-
-        // Broadcast to all connected WebSocket clients
-        io.emit('vitals-update', {
-            patient: data,
-            history: vitalHistory[data.patientId]
+        mqttClient = mqtt.connect(MQTT_BROKER, {
+            reconnectPeriod: 0,      // disable auto-reconnect — we handle it manually
+            connectTimeout: 5000,
         });
 
-        // Send separate status event for critical alerts
-        if (data.status !== 'normal') {
-            io.emit('patient-alert', {
-                patientId: data.patientId,
-                patientName: data.patientName,
-                status: data.status,
-                alerts: data.alerts,
-                timestamp: data.timestamp
+        mqttClient.on('connect', () => {
+            console.log('🌐 Cloud Server connected to MQTT broker');
+            console.log(`📥 Subscribing to: ${MQTT_TOPIC}`);
+            mqttClient.subscribe(MQTT_TOPIC, (err) => {
+                if (err) console.error('❌ MQTT Subscribe error:', err);
+                else console.log('✅ MQTT subscription active');
             });
-        }
+        });
 
-        // Console log for monitoring
-        const statusEmoji = {
-            'normal': '🟢',
-            'warning': '🟡',
-            'critical': '🔴'
-        };
-        console.log(`[${new Date().toLocaleTimeString()}] ${statusEmoji[data.status]} ${data.patientId}: HR=${data.vitals.heartRate} SpO2=${data.vitals.spo2}% Temp=${data.vitals.temperature}°C`);
+        mqttClient.on('message', (topic, message) => {
+            try {
+                const data = JSON.parse(message.toString());
+                patientData.set(data.patientId, data);
+                updateHistory(data);
+                io.emit('vitals-update', { patient: data, history: vitalHistory[data.patientId] });
+                if (data.status !== 'normal') {
+                    io.emit('patient-alert', {
+                        patientId: data.patientId,
+                        patientName: data.patientName,
+                        status: data.status,
+                        alerts: data.alerts,
+                        timestamp: data.timestamp
+                    });
+                }
+                const statusEmoji = { 'normal': '🟢', 'warning': '🟡', 'critical': '🔴' };
+                console.log(`[${new Date().toLocaleTimeString()}] ${statusEmoji[data.status] || '⚪'} ${data.patientId}: HR=${data.vitals.heartRate} SpO2=${data.vitals.spo2}% Temp=${data.vitals.temperature}°C`);
+            } catch (error) {
+                console.error('❌ Error processing MQTT message:', error.message);
+            }
+        });
 
-    } catch (error) {
-        console.error('❌ Error processing MQTT message:', error.message);
+        mqttClient.on('error', (error) => {
+            // Log once and stop — prevents log flooding on Render
+            console.warn(`⚠️  MQTT unavailable (${error.code || error.message}). Running in WebSocket-only mode.`);
+            mqttClient.end(true); // force close, no reconnect
+            mqttClient = null;
+        });
+
+    } catch (e) {
+        console.warn('⚠️  MQTT init failed:', e.message);
+        mqttClient = null;
     }
-});
+} else {
+    console.log('ℹ️  MQTT disabled via MQTT_ENABLED=false env var. Running in WebSocket-only mode.');
+}
 
 /**
  * Update vital history for charts
@@ -354,10 +354,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// MQTT error handler
-mqttClient.on('error', (error) => {
-    console.error('❌ MQTT Error:', error.message);
-});
+// MQTT error handler (legacy - now handled inside the if block above)
 
 // Start server
 server.listen(PORT, () => {
@@ -373,7 +370,7 @@ server.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGINT', () => {
     console.log('\n🛑 Shutting down server...');
-    mqttClient.end();
+    if (mqttClient) mqttClient.end();
     io.close();
     server.close();
     process.exit();
