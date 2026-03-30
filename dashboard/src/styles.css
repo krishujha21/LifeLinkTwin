@@ -16,13 +16,13 @@
     --radius-card: 16px;
     --radius-control: 12px;
 
-    --shadow-elev-1: 0 10px 30px rgba(0, 0, 0, 0.25);
-    --shadow-elev-2: 0 16px 45px rgba(0, 0, 0, 0.35);
+    --shadow-elev-1: 0 10px 30px rgba(6, 182, 212, 0.15), inset 0 1px 0 rgba(255,255,255,0.06);
+    --shadow-elev-2: 0 16px 45px rgba(59, 130, 246, 0.25), inset 0 1px 0 rgba(255,255,255,0.08);
 
     --bg-primary: #0a0e17;
     --bg-secondary: #0f172a;
-    --bg-card: rgba(15, 23, 42, 0.82);
-    --bg-card-hover: rgba(17, 24, 39, 0.92);
+    --bg-card: rgba(15, 23, 42, 0.45);
+    --bg-card-hover: rgba(17, 24, 39, 0.60);
     --bg-sidebar: rgba(9, 14, 26, 0.96);
     --bg-navbar: rgba(9, 14, 26, 0.88);
     --bg-input: rgba(30, 36, 48, 0.75);
@@ -118,7 +118,7 @@ html {
 body {
     min-height: 100%;
     width: 100%;
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color var(--transition-speed), color var(--transition-speed);
@@ -3455,4 +3455,50 @@ body {
     .navbar-right>*+* {
         margin-left: 0.75rem;
     }
+}
+
+/* ==================== Cinematic Overrides (Injected) ==================== */
+
+/* Glassmorphism panel physics */
+.card, .dashboard-card, .sidebar, .top-navbar, .sidebar-patient-card, .ll-card {
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.card:hover, .dashboard-card:hover {
+    box-shadow: var(--shadow-elev-2) !important;
+    border-color: rgba(6, 182, 212, 0.25) !important;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Critical Pulse Animations */
+@keyframes criticalPulse {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6); }
+    50% { transform: scale(1.05); box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.2); }
+    100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+@keyframes textGlowRed {
+    0%, 100% { text-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
+    50% { text-shadow: 0 0 15px rgba(239, 68, 68, 0.9); }
+}
+
+.text-danger, .status-critical, [class*="danger"], [class*="critical"] {
+    animation: textGlowRed 2s ease-in-out infinite;
+}
+
+.bg-danger {
+    animation: criticalPulse 1.5s ease-in-out infinite;
+}
+
+/* Enhancing existing heartbeat dots */
+.status-dot-sm.online, .nav-badge.live {
+    animation: pulse 2s infinite ease-out, glowCyan 2s infinite;
+}
+
+@keyframes glowCyan {
+    0%, 100% { filter: drop-shadow(0 0 2px var(--accent-cyan)); }
+    50% { filter: drop-shadow(0 0 8px var(--accent-cyan)); }
 }
