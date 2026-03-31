@@ -15,10 +15,10 @@
 
 const mqtt = require('mqtt');
 
-// MQTT Configuration
-const MQTT_BROKER = 'mqtt://localhost:1883';
-const INPUT_TOPIC = 'lifelink/patient1/vitals';
-const OUTPUT_TOPIC = 'lifelink/patient1/processed';
+// MQTT Configuration — uses public HiveMQ broker for cloud connectivity
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://broker.hivemq.com:1883';
+const INPUT_TOPIC  = process.env.MQTT_TOPIC_VITALS    || 'lifelink/llt2026/user/vitals';
+const OUTPUT_TOPIC = process.env.MQTT_TOPIC_PROCESSED || 'lifelink/llt2026/user/processed';
 
 // Connect to MQTT broker
 const client = mqtt.connect(MQTT_BROKER);

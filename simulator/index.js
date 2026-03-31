@@ -1,9 +1,9 @@
 
 const mqtt = require('mqtt');
 
-// MQTT Configuration
-const MQTT_BROKER = 'mqtt://localhost:1883';
-const TOPIC = 'lifelink/patient1/vitals';
+// MQTT Configuration — uses public HiveMQ broker for cloud connectivity
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://broker.hivemq.com:1883';
+const TOPIC = process.env.MQTT_TOPIC_VITALS || 'lifelink/llt2026/user/vitals';
 const PUBLISH_INTERVAL = 1000; // 1 second
 
 // Connect to MQTT broker
@@ -11,7 +11,7 @@ const client = mqtt.connect(MQTT_BROKER);
 
 // Patient metadata
 const patientId = 'patient1';
-const patientName = 'John Doe';
+const patientName = 'Divvya Singh';
 
 // ==================== REALISTIC VITAL SIMULATOR ====================
 
@@ -199,9 +199,8 @@ client.on('connect', () => {
 // Error Handler
 client.on('error', (error) => {
     console.error('❌ MQTT Connection Error:', error.message);
-    console.log('💡 Make sure Mosquitto MQTT broker is running!');
-    console.log('   Install: brew install mosquitto');
-    console.log('   Start: brew services start mosquitto');
+    console.log('💡 Ensure you can reach broker.hivemq.com:1883 (public HiveMQ broker)');
+    console.log('   Or set MQTT_BROKER env var to your own broker URL.');
 });
 
 // Graceful shutdown

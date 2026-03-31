@@ -30,9 +30,9 @@ const {
 
 // Configuration
 const PORT = process.env.PORT || 3000;
-const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://localhost:1883';
-const MQTT_TOPIC = 'lifelink/patient1/processed';
-const MQTT_ENABLED = process.env.MQTT_ENABLED !== 'false'; // set MQTT_ENABLED=false on Render
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://broker.hivemq.com:1883';
+const MQTT_TOPIC = process.env.MQTT_TOPIC || 'lifelink/llt2026/user/processed';
+const MQTT_ENABLED = process.env.MQTT_ENABLED !== 'false'; // set MQTT_ENABLED=false on Render to use WebSocket-only mode
 
 // Initialize Express app
 const app = express();
@@ -96,7 +96,8 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Set to true in production with HTTPS
+        secure: process.env.NODE_ENV === 'production', // true on Render (HTTPS)
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // required for cross-origin cookies
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
@@ -131,7 +132,8 @@ app.post('/api/auth/login', async (req, res) => {
         // Set token in cookie
         res.cookie('token', result.token, {
             httpOnly: true,
-            secure: false, // Set to true in production with HTTPS
+            secure: process.env.NODE_ENV === 'production', // true on Render (HTTPS)
+            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // required for cross-origin cookies
             maxAge: 24 * 60 * 60 * 1000 // 24 hours
         });
 
