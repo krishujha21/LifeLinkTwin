@@ -12,6 +12,9 @@
  * WebSocket Events: 'vitals-update', 'patient-status'
  */
 
+// Load environment variables from server/.env
+require('dotenv').config({ path: require('path').join(__dirname, '.env') });
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -265,18 +268,42 @@ if (MQTT_ENABLED) {
                 const data = JSON.parse(message.toString());
                 patientData.set(data.patientId, data);
                 updateHistory(data);
-                io.emit('vitals-update', { patient: data, history: vitalHistory[data.patientId] });
+
+                // Flat WebSocket payload matching dashboard contract
+                const wsPayload = {
+                    patientId:    data.patientId,
+                    patientName:  data.patientName,
+                    heartRate:    data.vitals?.heartRate,
+                    spo2:         data.vitals?.spo2,
+                    temperature:  data.vitals?.temperature,
+                    bloodPressure: data.vitals?.bloodPressure || null,
+                    status:       data.status,
+                    riskScore:    data.riskScore ?? null,
+                    aiAssessment: data.aiAssessment || null,
+                    alerts:       data.alerts || [],
+                    location:     data.location || null,
+                    timestamp:    data.timestamp,
+                    // Keep nested vitals + history for charts
+                    vitals:       data.vitals,
+                    history:      vitalHistory[data.patientId] || null
+                };
+
+                io.emit('vitals-update', { patient: wsPayload, history: vitalHistory[data.patientId] });
+
                 if (data.status !== 'normal') {
                     io.emit('patient-alert', {
-                        patientId: data.patientId,
-                        patientName: data.patientName,
-                        status: data.status,
-                        alerts: data.alerts,
-                        timestamp: data.timestamp
+                        patientId:    data.patientId,
+                        patientName:  data.patientName,
+                        status:       data.status,
+                        riskScore:    data.riskScore ?? null,
+                        alerts:       data.alerts,
+                        aiAssessment: data.aiAssessment || null,
+                        timestamp:    data.timestamp
                     });
                 }
-                const statusEmoji = { 'normal': '🟢', 'warning': '🟡', 'critical': '🔴' };
-                console.log(`[${new Date().toLocaleTimeString()}] ${statusEmoji[data.status] || '⚪'} ${data.patientId}: HR=${data.vitals.heartRate} SpO2=${data.vitals.spo2}% Temp=${data.vitals.temperature}°C`);
+
+                const statusEmoji = { normal: '🟢', warning: '🟡', critical: '🔴' };
+                console.log(`[${new Date().toLocaleTimeString()}] ${statusEmoji[data.status] || '⚪'} ${data.patientId}: HR=${data.vitals?.heartRate} SpO2=${data.vitals?.spo2}% Temp=${data.vitals?.temperature}°C Risk=${data.riskScore ?? '--'}%`);
             } catch (error) {
                 console.error('❌ Error processing MQTT message:', error.message);
             }
