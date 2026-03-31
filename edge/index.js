@@ -1,76 +1,57 @@
 /**
  * LifeLink Twin - Edge Processing Service
- * 
- * This service acts as an edge computing layer between the ambulance
- * and the cloud. It performs:
- * 
- * 1. Subscribes to raw vital data from MQTT
- * 2. Filters out noisy spikes (smoothing)
- * 3. Applies emergency detection logic
- * 4. Forwards processed data to cloud topic
- * 
- * Input Topic: lifelink/patient1/vitals
- * Output Topic: lifelink/patient1/processed
  */
 
 const mqtt = require('mqtt');
+const https = require('https');
 
-// MQTT Configuration — uses public HiveMQ broker for cloud connectivity
+// MQTT Configuration
 const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://broker.hivemq.com:1883';
-const INPUT_TOPIC  = process.env.MQTT_TOPIC_VITALS    || 'lifelink/llt2026/user/vitals';
+const INPUT_TOPIC = process.env.MQTT_TOPIC_VITALS || 'lifelink/llt2026/user/vitals';
 const OUTPUT_TOPIC = process.env.MQTT_TOPIC_PROCESSED || 'lifelink/llt2026/user/processed';
 
-// Connect to MQTT broker
 const client = mqtt.connect(MQTT_BROKER);
 
-// Store previous values for noise filtering (moving average)
-const history = {
-    heartRate: [],
-    spo2: [],
-    temperature: []
-};
-const HISTORY_SIZE = 5; // Number of samples for moving average
+const history = { heartRate: [], spo2: [], temperature: [] };
+const HISTORY_SIZE = 5;
+let lastGroqCall = 0;
 
 /**
- * Apply moving average filter to smooth out noisy spikes
- * @param {string} metric - The vital metric name
- * @param {number} value - Current reading value
- * @returns {number} Smoothed value
+ * Moving average filter
  */
 function smoothValue(metric, value) {
-    // Add to history
     history[metric].push(value);
-
-    // Keep only last N values
-    if (history[metric].length > HISTORY_SIZE) {
-        history[metric].shift();
-    }
-
-    // Calculate moving average
+    if (history[metric].length > HISTORY_SIZE) history[metric].shift();
     const sum = history[metric].reduce((a, b) => a + b, 0);
-    const average = sum / history[metric].length;
-
-    return Math.round(average * 10) / 10; // Round to 1 decimal
+    return Math.round((sum / history[metric].length) * 10) / 10;
 }
 
 /**
- * Determine patient status based on vital signs
- * Emergency detection logic:
- * - heartRate > 120 → warning
- * - heartRate > 130 → critical
- * - spo2 < 90 → critical
- * - spo2 < 94 → warning
- * - temperature > 38.5 → warning
- * - temperature > 39 → critical
- * 
- * @param {object} vitals - Smoothed vital signs
- * @returns {object} Status info with level and alerts
+ * Rule-based risk score 0-100
+ */
+function getRiskScore(vitals) {
+    let score = 0;
+    if (vitals.heartRate > 130) score += 40;
+    else if (vitals.heartRate > 120) score += 25;
+    else if (vitals.heartRate < 50) score += 40;
+
+    if (vitals.spo2 < 90) score += 40;
+    else if (vitals.spo2 < 94) score += 25;
+
+    if (vitals.temperature > 39) score += 20;
+    else if (vitals.temperature > 38.5) score += 10;
+    else if (vitals.temperature < 35) score += 20;
+
+    return Math.min(100, score);
+}
+
+/**
+ * Determine status and alerts
  */
 function determineStatus(vitals) {
     const alerts = [];
     let status = 'normal';
 
-    // Heart Rate Analysis
     if (vitals.heartRate > 130) {
         status = 'critical';
         alerts.push('Tachycardia: Heart rate critically high');
@@ -82,7 +63,6 @@ function determineStatus(vitals) {
         alerts.push('Bradycardia: Heart rate critically low');
     }
 
-    // SpO2 Analysis
     if (vitals.spo2 < 90) {
         status = 'critical';
         alerts.push('Hypoxemia: Oxygen saturation critically low');
@@ -91,7 +71,6 @@ function determineStatus(vitals) {
         alerts.push('Low oxygen saturation');
     }
 
-    // Temperature Analysis
     if (vitals.temperature > 39) {
         status = 'critical';
         alerts.push('High fever: Temperature critical');
@@ -107,95 +86,119 @@ function determineStatus(vitals) {
 }
 
 /**
- * Process incoming vital data
- * @param {object} data - Raw vital data from simulator
- * @returns {object} Processed data with status
+ * Groq AI clinical assessment
+ * Throttled to 1 call per 15 seconds
  */
-function processVitals(data) {
-    // Apply smoothing filter
+async function getAIAssessment(vitals, status) {
+    if (!process.env.GROQ_API_KEY) return null;
+    if (status === 'normal') return null;
+    if (Date.now() - lastGroqCall < 15000) return null;
+    lastGroqCall = Date.now();
+
+    const prompt = `Patient vitals — HR: ${vitals.heartRate}bpm, SpO2: ${vitals.spo2}%, Temp: ${vitals.temperature}°C. Status: ${status}. Write a 2-sentence urgent clinical assessment for the receiving hospital doctor. Be specific.`;
+
+    const body = JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 120
+    });
+
+    return new Promise((resolve) => {
+        const req = https.request({
+            hostname: 'api.groq.com',
+            path: '/openai/v1/chat/completions',
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(body)
+            }
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const parsed = JSON.parse(data);
+                    const text = parsed.choices?.[0]?.message?.content;
+                    console.log(`🤖 AI Assessment: ${text}`);
+                    resolve(text || null);
+                } catch { resolve(null); }
+            });
+        });
+        req.on('error', () => resolve(null));
+        req.setTimeout(5000, () => { req.destroy(); resolve(null); });
+        req.write(body);
+        req.end();
+    });
+}
+
+/**
+ * Process incoming vital data
+ */
+async function processVitals(data) {
     const smoothedVitals = {
         heartRate: Math.round(smoothValue('heartRate', data.vitals.heartRate)),
         spo2: Math.round(smoothValue('spo2', data.vitals.spo2)),
         temperature: smoothValue('temperature', data.vitals.temperature)
     };
 
-    // Determine status and alerts
     const { status, alerts } = determineStatus(smoothedVitals);
+    const riskScore = getRiskScore(smoothedVitals);
+    const aiAssessment = await getAIAssessment(smoothedVitals, status);
 
-    // Build processed data packet
     return {
         patientId: data.patientId,
         patientName: data.patientName,
         timestamp: data.timestamp,
         processedAt: new Date().toISOString(),
         vitals: smoothedVitals,
-        rawVitals: data.vitals, // Include raw for comparison
-        status: status,
-        alerts: alerts,
+        rawVitals: data.vitals,
+        status,
+        alerts,
+        riskScore,
+        aiAssessment: aiAssessment || 'Monitoring vitals — all parameters being tracked.',
         location: data.location
     };
 }
 
-// MQTT Connection Handler
+// MQTT Connection
 client.on('connect', () => {
-    console.log('🖥️  Edge Processing Service connected to MQTT broker');
-    console.log(`📥 Subscribing to: ${INPUT_TOPIC}`);
-    console.log(`📤 Publishing to: ${OUTPUT_TOPIC}`);
+    console.log('🖥️  Edge Processing Service connected');
+    console.log(`📥 Input:  ${INPUT_TOPIC}`);
+    console.log(`📤 Output: ${OUTPUT_TOPIC}`);
+    console.log(`🤖 Groq AI: ${process.env.GROQ_API_KEY ? '✅ Enabled' : '❌ No API key'}`);
     console.log('-------------------------------------------');
 
-    // Subscribe to raw vitals
     client.subscribe(INPUT_TOPIC, (err) => {
-        if (err) {
-            console.error('❌ Subscribe error:', err);
-        } else {
-            console.log('✅ Subscribed successfully. Waiting for data...\n');
-        }
+        if (err) console.error('❌ Subscribe error:', err);
+        else console.log('✅ Subscribed. Waiting for data...\n');
     });
 });
 
-// Message Handler
-client.on('message', (topic, message) => {
+// Message Handler — async
+client.on('message', async (topic, message) => {
     try {
-        // Parse incoming data
         const rawData = JSON.parse(message.toString());
-
-        // Process the vitals
-        const processedData = processVitals(rawData);
-
-        // Publish processed data
+        const processedData = await processVitals(rawData);
         client.publish(OUTPUT_TOPIC, JSON.stringify(processedData));
 
-        // Log with status color
-        const statusEmoji = {
-            'normal': '🟢',
-            'warning': '🟡',
-            'critical': '🔴'
-        };
-
-        console.log(`[${new Date().toLocaleTimeString()}] Processed vitals:`);
-        console.log(`   ${statusEmoji[processedData.status]} Status: ${processedData.status.toUpperCase()}`);
-        console.log(`   ❤️  HR: ${processedData.rawVitals.heartRate} → ${processedData.vitals.heartRate} BPM`);
-        console.log(`   🫁 SpO2: ${processedData.rawVitals.spo2} → ${processedData.vitals.spo2}%`);
-        console.log(`   🌡️  Temp: ${processedData.rawVitals.temperature} → ${processedData.vitals.temperature}°C`);
-
+        const emoji = { normal: '🟢', warning: '🟡', critical: '🔴' };
+        console.log(`[${new Date().toLocaleTimeString()}] ${emoji[processedData.status]} ${processedData.status.toUpperCase()} | Risk: ${processedData.riskScore}% | HR: ${processedData.vitals.heartRate} | SpO2: ${processedData.vitals.spo2} | Temp: ${processedData.vitals.temperature}`);
         if (processedData.alerts.length > 0) {
-            console.log(`   ⚠️  Alerts: ${processedData.alerts.join(', ')}`);
+            console.log(`   ⚠️  ${processedData.alerts.join(', ')}`);
         }
-        console.log('');
 
     } catch (error) {
-        console.error('❌ Error processing message:', error.message);
+        console.error('❌ Error:', error.message);
     }
 });
 
-// Error Handler
 client.on('error', (error) => {
-    console.error('❌ MQTT Connection Error:', error.message);
+    console.error('❌ MQTT Error:', error.message);
 });
 
-// Graceful shutdown
 process.on('SIGINT', () => {
-    console.log('\n🛑 Shutting down edge service...');
+    console.log('\n🛑 Shutting down...');
     client.end();
     process.exit();
 });
