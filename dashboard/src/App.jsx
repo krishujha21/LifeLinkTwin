@@ -30,6 +30,11 @@ import {
 // Login Page
 import Login from './pages/Login';
 
+// ── New Role-Based Portals ─────────────────────────────────────────────────
+import AttendantDashboard from './pages/AttendantDashboard';
+import DoctorDashboard    from './pages/DoctorDashboard';
+import HospitalDashboard  from './pages/HospitalDashboard';
+
 // API Configuration
 import { API_BASE_URL } from './config/api';
 
@@ -686,10 +691,14 @@ function App() {
                       />
                     }
                   />
-                  <Route
-                    path="/settings"
-                    element={<Settings />}
-                  />
+                  <Route path="/settings" element={<Settings />} />
+
+                  {/* ── New Role-Based Portal Routes ───────────────────── */}
+                  <Route path="/login"     element={<Login />} />
+                  <Route path="/attendant" element={<AttendantDashboard />} />
+                  <Route path="/doctor"    element={<DoctorDashboard />} />
+                  <Route path="/hospital"  element={<HospitalDashboard />} />
+
                 </Routes>
               </div>
 

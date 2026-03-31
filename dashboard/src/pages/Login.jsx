@@ -1,200 +1,253 @@
 /**
- * LifeLink Twin - Login Page Component
- * 
- * Secure login page with authentication
- * Supports both real backend auth and demo mode (when backend is not available)
+ * LifeLink Twin — Login Page
+ * Route: /
+ * Role selector → saves to localStorage → routes to correct dashboard
  */
 
 import { useState } from 'react';
-import { useLanguage } from '../i18n';
-import { API_BASE_URL } from '../config/api';
+import { useNavigate } from 'react-router-dom';
+import { COLORS } from '../utils/riskUtils';
 
-// Demo users for when backend is not available (production demo)
-const DEMO_USERS = {
-    doctor: { username: 'doctor', password: 'doctor123', role: 'doctor', name: 'Dr. Smith', email: 'doctor@lifelink.com' },
-    attendant: { username: 'attendant', password: 'password123', role: 'attendant', name: 'Divvya\'s Family', email: 'family@lifelink.com' }
-};
+const ROLES = [
+    {
+        id: 'attendant',
+        label: 'Family / Attendant',
+        icon: '👨‍👩‍👧‍👦',
+        desc: 'Track your loved one\'s vitals in real-time',
+        route: '/attendant',
+        accent: COLORS.accent,
+    },
+    {
+        id: 'doctor',
+        label: 'Medical Doctor',
+        icon: '👨‍⚕️',
+        desc: 'Full clinical dashboard with AI assessment',
+        route: '/doctor',
+        accent: COLORS.ai,
+    },
+    {
+        id: 'hospital',
+        label: 'Hospital Admin',
+        icon: '🏥',
+        desc: 'Bed occupancy, resource & patient overview',
+        route: '/hospital',
+        accent: COLORS.normal,
+    },
+];
 
-function Login({ onLogin }) {
-    const { t } = useLanguage();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+export default function Login() {
+    const navigate = useNavigate();
+    const [selectedRole, setSelectedRole] = useState('attendant');
+    const [name, setName]                 = useState('');
+    const [patientId, setPatientId]       = useState('patient1');
+    const [error, setError]               = useState('');
 
-    // Demo mode authentication (client-side only)
-    const demoLogin = (username, password) => {
-        const user = DEMO_USERS[username];
-        if (user && user.password === password) {
-            const token = `demo-token-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-            return {
-                success: true,
-                token,
-                user: {
-                    username: user.username,
-                    role: user.role,
-                    name: user.name,
-                    email: user.email
-                }
-            };
-        }
-        return { success: false, message: 'Invalid username or password' };
-    };
+    const role = ROLES.find(r => r.id === selectedRole);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
-        setLoading(true);
-        setError('');
+        if (!name.trim()) { setError('Please enter your name.'); return; }
+        if (!patientId.trim()) { setError('Please enter a patient ID.'); return; }
 
-        try {
-            // Try real backend first
-            const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password }),
-                credentials: 'include'
-            });
+        localStorage.setItem('ll_role',      selectedRole);
+        localStorage.setItem('ll_name',      name.trim());
+        localStorage.setItem('ll_patientId', patientId.trim());
 
-            const data = await response.json();
-
-            if (data.success) {
-                // Roles are strictly mapped internally now.
-                // Store token and user info
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-                onLogin(data.user, data.token);
-            } else {
-                setError(data.message || 'Login failed');
-            }
-        } catch (err) {
-            console.log('Backend not available, using demo mode...');
-
-            // Fallback to demo mode when backend is not available
-            const demoResult = demoLogin(username, password);
-
-            if (demoResult.success) {
-                localStorage.setItem('token', demoResult.token);
-                localStorage.setItem('user', JSON.stringify(demoResult.user));
-                onLogin(demoResult.user, demoResult.token);
-            } else {
-                setError(demoResult.message);
-            }
-        } finally {
-            setLoading(false);
-        }
+        navigate(role.route);
     };
 
-    const fillCredentials = (user, pass) => {
-        setUsername(user);
-        setPassword(pass);
+    // ── styles ──────────────────────────────────────────────────────────────
+    const pageStyle = {
+        minHeight: '100vh',
+        background: `radial-gradient(ellipse at 30% 20%, rgba(59,130,246,0.08) 0%, ${COLORS.bg} 60%)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: '"Inter", sans-serif',
+        padding: '20px',
     };
+
+    const cardStyle = {
+        background: COLORS.card,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: '16px',
+        padding: '40px 36px',
+        width: '100%',
+        maxWidth: '460px',
+        boxShadow: '0 24px 80px rgba(0,0,0,0.5)',
+    };
+
+    const inputStyle = {
+        width: '100%',
+        background: COLORS.bg,
+        border: `1px solid ${COLORS.border}`,
+        borderRadius: '10px',
+        padding: '12px 16px',
+        color: COLORS.text,
+        fontSize: '15px',
+        outline: 'none',
+        boxSizing: 'border-box',
+        marginTop: '6px',
+    };
+
+    const labelStyle = {
+        color: COLORS.muted,
+        fontSize: '13px',
+        fontWeight: 600,
+        letterSpacing: '0.04em',
+        textTransform: 'uppercase',
+    };
+
+    const roleCardStyle = (id) => ({
+        border: `2px solid ${selectedRole === id ? role.accent : COLORS.border}`,
+        borderRadius: '12px',
+        padding: '14px 16px',
+        cursor: 'pointer',
+        background: selectedRole === id ? `rgba(${hexToRgb(role.accent)},0.08)` : 'transparent',
+        transition: 'all 0.2s ease',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '14px',
+    });
 
     return (
-        <div className="login-page">
-            <div className="login-container">
-                <div className="login-header">
-                    <div className="login-logo">
-                        <span className="logo-icon">🏥</span>
-                        <h1>LifeLink Twin</h1>
-                    </div>
-                    <p className="login-subtitle">Emergency Health Monitoring System</p>
+        <div style={pageStyle}>
+            <div style={cardStyle}>
+                {/* Header */}
+                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+                    <div style={{ fontSize: '42px', marginBottom: '8px' }}>🫀</div>
+                    <h1 style={{ color: COLORS.text, fontSize: '24px', fontWeight: 700, margin: 0 }}>
+                        LifeLink Twin
+                    </h1>
+                    <p style={{ color: COLORS.muted, fontSize: '14px', margin: '6px 0 0' }}>
+                        Real-time Health Monitoring System
+                    </p>
                 </div>
 
-                <div className="login-body">
-                    {error && (
-                        <div className="login-alert error">
-                            <span>⚠️</span> {error}
+                <form onSubmit={handleSubmit}>
+                    {/* Role selector */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <div style={{ ...labelStyle, marginBottom: '12px' }}>Select Your Role</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {ROLES.map(r => (
+                                <div
+                                    key={r.id}
+                                    style={roleCardStyle(r.id)}
+                                    onClick={() => setSelectedRole(r.id)}
+                                >
+                                    <span style={{ fontSize: '28px', lineHeight: 1 }}>{r.icon}</span>
+                                    <div>
+                                        <div style={{
+                                            color: selectedRole === r.id ? COLORS.text : COLORS.muted,
+                                            fontWeight: 600,
+                                            fontSize: '15px',
+                                        }}>
+                                            {r.label}
+                                        </div>
+                                        <div style={{ color: COLORS.muted, fontSize: '12px', marginTop: '2px' }}>
+                                            {r.desc}
+                                        </div>
+                                    </div>
+                                    {/* Selection indicator */}
+                                    <div style={{ marginLeft: 'auto' }}>
+                                        <div style={{
+                                            width: '18px', height: '18px',
+                                            borderRadius: '50%',
+                                            border: `2px solid ${selectedRole === r.id ? r.accent : COLORS.border}`,
+                                            background: selectedRole === r.id ? r.accent : 'transparent',
+                                            transition: 'all 0.2s',
+                                        }} />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Name input */}
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={labelStyle}>
+                            Your Name
+                        </label>
+                        <input
+                            style={inputStyle}
+                            type="text"
+                            placeholder={selectedRole === 'doctor' ? 'Dr. Sharma' : 'Enter your name'}
+                            value={name}
+                            onChange={e => { setName(e.target.value); setError(''); }}
+                            autoComplete="name"
+                        />
+                    </div>
+
+                    {/* Patient ID input — hidden for hospital admin */}
+                    {selectedRole !== 'hospital' && (
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={labelStyle}>
+                                Patient ID
+                            </label>
+                            <input
+                                style={inputStyle}
+                                type="text"
+                                placeholder="patient1"
+                                value={patientId}
+                                onChange={e => { setPatientId(e.target.value); setError(''); }}
+                            />
+                            <div style={{ color: COLORS.muted, fontSize: '12px', marginTop: '6px' }}>
+                                Default: <code style={{ color: COLORS.accent }}>patient1</code>
+                            </div>
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label htmlFor="username">
-                                <span className="label-icon">👤</span> Username
-                            </label>
-                            <input
-                                type="text"
-                                id="username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter your username"
-                                required
-                                autoComplete="username"
-                                disabled={loading}
-                            />
+                    {/* Error */}
+                    {error && (
+                        <div style={{
+                            background: 'rgba(239,68,68,0.1)',
+                            border: `1px solid ${COLORS.critical}`,
+                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            color: COLORS.critical,
+                            fontSize: '13px',
+                            marginBottom: '16px',
+                        }}>
+                            ⚠️ {error}
                         </div>
+                    )}
 
-                        <div className="form-group">
-                            <label htmlFor="password">
-                                <span className="label-icon">🔒</span> Password
-                            </label>
-                            <input
-                                type="password"
-                                id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your password"
-                                required
-                                autoComplete="current-password"
-                                disabled={loading}
-                            />
-                        </div>
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        style={{
+                            width: '100%',
+                            padding: '14px',
+                            borderRadius: '10px',
+                            border: 'none',
+                            background: `linear-gradient(135deg, ${role.accent}, ${role.accent}bb)`,
+                            color: '#fff',
+                            fontSize: '16px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            letterSpacing: '0.02em',
+                            transition: 'opacity 0.2s',
+                            boxShadow: `0 4px 20px ${role.accent}44`,
+                        }}
+                        onMouseOver={e => e.currentTarget.style.opacity = '0.88'}
+                        onMouseOut={e => e.currentTarget.style.opacity = '1'}
+                    >
+                        Enter as {role.label.split('/')[0].trim()} →
+                    </button>
+                </form>
 
-                        <button
-                            type="submit"
-                            className="login-button"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <span className="spinner"></span>
-                                    Logging in...
-                                </>
-                            ) : (
-                                <>
-                                    🔐 Login
-                                </>
-                            )}
-                        </button>
-                    </form>
-
-                    <div className="demo-credentials">
-                        <h4>🔑 Access Credentials</h4>
-                        <div className="credential-list">
-                            <button
-                                type="button"
-                                className="credential-btn mb-3"
-                                onClick={() => fillCredentials('attendant', 'password123')}
-                            >
-                                <span className="role-icon">👨‍👩‍👧‍👦</span>
-                                <div className="credential-info">
-                                    <span className="credential-user">attendant</span>
-                                    <span className="credential-role">Family Tracking Portal</span>
-                                </div>
-                            </button>
-                            <button
-                                type="button"
-                                className="credential-btn"
-                                onClick={() => fillCredentials('doctor', 'doctor123')}
-                            >
-                                <span className="role-icon">👨‍⚕️</span>
-                                <div className="credential-info">
-                                    <span className="credential-user">doctor</span>
-                                    <span className="credential-role">Medical Doctor</span>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="login-footer">
-                    <p>🔒 Secure Authentication • Hashed Passwords</p>
-                </div>
+                {/* Footer */}
+                <p style={{ color: COLORS.muted, fontSize: '12px', textAlign: 'center', marginTop: '24px', marginBottom: 0 }}>
+                    🔒 Demo mode · No real authentication · Hackathon build
+                </p>
             </div>
         </div>
     );
 }
 
-export default Login;
+// Helper: convert hex to "r,g,b" string for rgba()
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (!result) return '59,130,246';
+    return `${parseInt(result[1], 16)},${parseInt(result[2], 16)},${parseInt(result[3], 16)}`;
+}
